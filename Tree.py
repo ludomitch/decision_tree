@@ -1,5 +1,4 @@
 import numpy as np
-import math
 
 #####
 # method : entropy
@@ -7,12 +6,13 @@ import math
 # 
 # returns "what is the return of this function ?
 ##"###
+
 def entropy(labels):
     size = labels.size
     res = 0
     for i in np.unique(labels):
         pk = len(labels[labels==i])/size
-        res += pk * math.log(pk, 2)
+        res += pk * np.log2(pk)
     return -res
 
 #####
@@ -33,13 +33,12 @@ def remainder(s_left, s_right):
 # returns 
 #####
 def info_gain(s_all, bound):
-    sorted_arr = s_all[s_all[:,0].argsort()]
-    s_left = sorted_arr[sorted_arr[:,0]>bound][:,1]
+    sorted_arr = np.sort(s_all,kind = 'heapsort')
+    s_left = sorted_arr[sorted_arr[:,0]>bound][:,1] # labels are solely required for entropy calculation... hence only those are passed
     s_right = sorted_arr[sorted_arr[:,0]<bound][:,1]
-    sorted_arr = sorted_arr[:, 1]
-    return entropy(sorted_arr) - remainder(s_left, s_right)
+    return entropy(sorted_arr[:, 1]) - remainder(s_left, s_right)
 
-#####
+##### 
 # method : get_boundaries
 # arr : 
 #
@@ -65,7 +64,7 @@ def find_split(data):
             temp_gain = info_gain(data[:, [col,-1]], boundary)
             if temp_gain > top_gain:
                 top_gain = temp_gain
-                split = {'attribute':col, 'value':boundary}
+                split = {'attribute':col, 'value':boundary} # unindent till out of first for loop...
     return split
 
 #####
@@ -89,14 +88,14 @@ def split_data(arr, col, bound):
 # returns the score
 #####
 def tree_learn(data, depth, tree):
-    max_depth = 2
+    max_depth = 5
     if depth==max_depth:
         unique, counts = np.unique(data[:,-1], return_counts=True)
         tree = unique[np.argmax(counts)]
         return tree, depth
     if np.all(data[:, -1]==data[0, -1]): # check if all labels are identical
         tree = data[0,-1]
-        return tree, depth, 
+        return tree, depth 
     split = find_split(data)
     split['left'] = {}
     split['right'] = {}
@@ -128,8 +127,13 @@ def score_tree(tree):
 def predict(tree, data):
     if isinstance(tree, float):
         return tree
-    if data[tree['attribute']]>tree['value']:
+    if (data[tree['attribute']]>tree['value']).any():
         return predict(tree['left'], data)
     else:
         return predict(tree['right'], data)
     return tree
+
+# data = np.loadtxt('noisy_dataset.txt')
+# tdict = tree_learn(data,0,0)
+# pprint.pprint(tdict[0])
+# predict(tdict[0],data[2,:-1]) # ROW, Class
