@@ -1,120 +1,126 @@
 import numpy as np
+from tree import predict
 
-#####
-# method : split : takes an array, splits it in 2 uneven arrays.
-# A : array : The array to be split
-# pos : int : the position on which the split occurs
-# N : int : the number of rows to take when splitting
-# the upper matrix is of size N, the lower one is (size of A) - N
-# returns upper, lower
-#####
-#
-def split(A, pos, N):
-    upper = A[pos:pos+N]
-    lower = np.vstack((A[:pos],A[pos+N:]))
+
+def split(arr, pos, n):
+    """method : split : takes an array, splits it in 2 uneven arrays.
+    arr : array : The array to be split
+    pos : int : the position on which the split occurs
+    n : int : the number of rows to take when splitting
+    the upper matrix is of size n, the lower one is (size of arr) - N
+    returns upper, lower"""
+
+    upper = arr[pos : pos + n]
+    lower = np.vstack((arr[:pos], arr[pos + n :]))
 
     return upper, lower
 
-#####
-# method : crossValidation : we'll explain once it's finished
-# tree : dictionary of dictionaries: this is the decision tree
-# data : array : this is the complete dataset used
-# folds : int : how many folds are used during cross validation
-# testPercentage : float : the percentage of the dataset to be used for testing
-# returns "we'll see"
-#####
-def crossValidation(tree, data, folds, testPercentage):
 
+def cross_validation(tree, data, folds, test_percentage):
+    """method : cross_validation : we'll explain once it's finished
+        tree : dictionary of dictionaries: this is the decision tree
+        data : array : this is the complete dataset used
+        folds : int : how many folds are used during cross validation
+        test_percentage : float : the percentage of the dataset to be used for testing
+        returns "we'll see"""
     df = data.copy()
     errorList = []
-    splitSize = int(testPercentage * df.shape[0])
+    split_size = int(test_percentage * df.shape[0])
 
-    LUAP, LUAR, LF1, LUAC = [], [], [], []
+    luap, luar, lf1, luac = [], [], [], []
 
-    #index = np.arange(df.shape[0])
-    #np.hstack((df, index)) # adding an index before shuffling
+    # index = np.arange(df.shape[0])
+    # np.hstack((df, index)) # adding an index before shuffling
     np.random.shuffle(df)
 
     # Splitting Test from Validation and Training
     for i in range(folds):
-        testSet, trainAndValidate = split(df, i*splitSize, splitSize)
-        #print("Test, Val")
-        #print("split Position:"+str(i*splitSize))
-        UAR = 0
-        UAP = 0
-        UAC = 0
-        F1 = 0
+        test_set, train_and_validate = split(df, i * split_size, split_size)
+        # print("Test, Val")
+        # print("split Position:"+str(i*split_size))
+        uar = 0
+        uap = 0
+        uac = 0
+        f1 = 0
 
         # Splitting Validation from Training
         for j in range(folds - 1):
-            validate, train = split(trainAndValidate, j*splitSize, splitSize)
-            TUAR, TUAP, TF1, TUAC = evaluate(tree, validate, 4) # for later use
-            UAR += TUAR
-            UAP += TUAP
-            F1 += TF1
-            UAC += TUAC
+            validate, train = split(train_and_validate, j * split_size, split_size)
+            tuar, tuap, tf1, tuac = evaluate(tree, validate, 4)  # for later use
+            uar += tuar
+            uap += tuap
+            f1 += tf1
+            uac += tuac
 
             # Train tree on train
             # validate
-            #print("Val, train")
-            #print("split Position:"+str(j*splitSize))
+            # print("Val, train")
+            # print("split Position:"+str(j*split_size))
             # compute errors
-        #errorList.append()
-        LUAR.append(UAR/j)
-        LUAP.append(UAP/j)
-        LF1.append(F1/j)
-        LUAC.append(UAC/j)
-    #LUAR = np.mean(LUAR)
-    #LUAP = np.mean(LUAP)
-    #LUAC = np.mean(LUAC)
-    #LF1 = np.mean(LF1)
+        # errorList.append()
+        luar.append(uar / j)
+        luap.append(uap / j)
+        lf1.append(f1 / j)
+        luac.append(uac / j)
+    # luar = np.mean(luar)
+    # luap = np.mean(luap)
+    # luac = np.mean(luac)
+    # lf1 = np.mean(lf1)
 
-    print("UAR = ", LUAR ,end ="\n\n")
-    print("UAP = ", LUAP ,end ="\n\n")
-    print("Classification Rate = ", LUAC ,end ="\n\n")
-    print("F1 = ", LF1 ,end ="\n\n")
+    print("uar = ", luar, end="\n\n")
+    print("uap = ", luap, end="\n\n")
+    print("Classification Rate = ", luac, end="\n\n")
+    print("f1 = ", lf1, end="\n\n")
 
-    return
+    return np.mean(lf1) # return f1 fr the moment.
 
-#####
-# evaluate : method : evaluates the accuracy of the predictions made by a tree
-# tree : dictionnary of dictionnaries : this is the decision tree
-# validationSet : array : dataset used for validation
-# nbLabels : int : number of labels to classify
-# returns UAR, UAP, F1 and the classification rate (see lecture notes)
-#####
-def evaluate(tree, validationSet, nbLabels):
-    from Tree import predict
 
-    ConfusedMatrix = np.zeros((nbLabels,nbLabels))
-    for i in range(validationSet.shape[0]):
-        if (predict(tree, validationSet[i,:]) == validationSet[i,-1]):
-            ConfusedMatrix[int(validationSet[i,-1]) -1 ,int(validationSet[i,-1]) -1] +=1
+def evaluate(tree, validation_set, nb_labels):
+    """evaluate : method : evaluates the accuracy of the predictions made by a tree
+    tree : dictionnary of dictionnaries : this is the decision tree
+    validation_set : array : dataset used for validation
+    nb_labels : int : number of labels to classify
+    returns uar, uap, f1 and the classification rate (see lecture notes)"""
 
-        elif (predict(tree, validationSet[i,:]) != validationSet[i,-1]):
-            ConfusedMatrix[int(validationSet[i,-1]) -1, int(predict(tree, validationSet[i,:])) -1] +=1
+    confusion_matrix = np.zeros((nb_labels, nb_labels))
+    for i in range(validation_set.shape[0]):
+        if predict(tree, validation_set[i, :]) == validation_set[i, -1]:
+            confusion_matrix[
+                int(validation_set[i, -1]) - 1, int(validation_set[i, -1]) - 1
+            ] += 1
 
-    RecallVect = np.zeros((1, nbLabels))
-    PrecVect = np.zeros((1, nbLabels))
-    Classifiacfjdsfsdoifjrw = np.zeros((1,nbLabels))
+        elif predict(tree, validation_set[i, :]) != validation_set[i, -1]:
+            confusion_matrix[
+                int(validation_set[i, -1]) - 1,
+                int(predict(tree, validation_set[i, :])) - 1,
+            ] += 1
 
-    for i in range(ConfusedMatrix.shape[0]):
-        RecallVect[0,i] = ConfusedMatrix[i,i]/np.sum(ConfusedMatrix[i,:])
-        PrecVect[0,i] = ConfusedMatrix[i,i]/np.sum(ConfusedMatrix[:,i])
-        Classifiacfjdsfsdoifjrw[0,i] = np.trace(ConfusedMatrix) / (np.trace(ConfusedMatrix) + np.sum(ConfusedMatrix[:,i]) + np.sum(ConfusedMatrix[i,:]) - 2*ConfusedMatrix[i,i])
+    recall_vect = np.zeros((1, nb_labels))
+    prec_vect = np.zeros((1, nb_labels))
+    classification_rate = np.zeros((1, nb_labels))
 
-    UAR = np.mean(RecallVect)
-    UAP = np.mean(PrecVect)
-    F1 = 2 * (UAR * UAP) / (UAR + UAP)
-    UAClassifiacfjdsfsdoifjrw = np.mean(Classifiacfjdsfsdoifjrw)
+    for i in range(confusion_matrix.shape[0]):
+        recall_vect[0, i] = confusion_matrix[i, i] / np.sum(confusion_matrix[i, :])
+        prec_vect[0, i] = confusion_matrix[i, i] / np.sum(confusion_matrix[:, i])
+        classification_rate[0, i] = np.trace(confusion_matrix) / (
+            np.trace(confusion_matrix)
+            + np.sum(confusion_matrix[:, i])
+            + np.sum(confusion_matrix[i, :])
+            - 2 * confusion_matrix[i, i]
+        )
 
-    #print("Recall [Room 1 | Room 2 | Room 3 | Room 4]")
-    #print(RecallVect, end= "UAR ="+str(UAR) +"\n\n")
-    #print("Precision [Room 1 | Room 2 | Room 3 | Room 4]")
-    #print(PrecVect, end= "UAP ="+str(UAP) +"\n\n")
-    #print("Classification Rate [Room 1 | Room 2 | Room 3 | Room 4]")
-    #print(Classifiacfjdsfsdoifjrw, end= "Average ="+str(UAR) +"\n\n")
+    uar = np.mean(recall_vect)
+    uap = np.mean(prec_vect)
+    f1 = 2 * (uar * uap) / (uar + uap)
+    uaclassifcation_rate = np.mean(classification_rate)
 
-    #print(ConfusedMatrix)
+    # print("Recall [Room 1 | Room 2 | Room 3 | Room 4]")
+    # print(recall_vect, end= "uar ="+str(uar) +"\n\n")
+    # print("Precision [Room 1 | Room 2 | Room 3 | Room 4]")
+    # print(prec_vect, end= "uap ="+str(uap) +"\n\n")
+    # print("Classification Rate [Room 1 | Room 2 | Room 3 | Room 4]")
+    # print(classification_rate, end= "Average ="+str(uar) +"\n\n")
 
-    return UAR, UAP, F1, UAClassifiacfjdsfsdoifjrw
+    # print(confusion_matrix)
+
+    return uar, uap, f1, uaclassifcation_rate
