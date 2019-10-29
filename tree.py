@@ -1,4 +1,11 @@
+from functools import reduce  # forward compatibility for Python 3
+import operator
+import copy
+
 import numpy as np
+
+from evaluation import evaluate
+
 
 def entropy(labels):
     """method : entropy
@@ -8,7 +15,7 @@ def entropy(labels):
     size = labels.size
     res = 0
     for i in np.unique(labels):
-        pk = len(labels[labels==i])/size
+        pk = len(labels[labels == i]) / size
         res += pk * np.log2(pk)
     return -res
 
@@ -30,10 +37,13 @@ def info_gain(s_all, bound):
     s_all :
     bound :
     returns"""
-    sorted_arr = np.sort(s_all,kind = 'heapsort')
-    s_left = sorted_arr[sorted_arr[:,0]>bound][:,1] # labels are solely required for entropy calculation... hence only those are passed
-    s_right = sorted_arr[sorted_arr[:,0]<bound][:,1]
+    sorted_arr = np.sort(s_all, kind="heapsort")
+    s_left = sorted_arr[sorted_arr[:, 0] > bound][
+        :, 1
+    ]  # labels are solely required for entropy calculation... hence only those are passed
+    s_right = sorted_arr[sorted_arr[:, 0] < bound][:, 1]
     return entropy(sorted_arr[:, 1]) - remainder(s_left, s_right)
+
 
 def get_boundaries(arr):
     """method : get_boundaries
@@ -58,7 +68,10 @@ def find_split(data):
             temp_gain = info_gain(data[:, [col, -1]], boundary)
             if temp_gain > top_gain:
                 top_gain = temp_gain
-                split = {'attribute':col, 'value':boundary} # unindent till out of first for loop...
+                split = {
+                    "attribute": col,
+                    "value": boundary,
+                }  # unindent till out of first for loop...
 
     return split
 
@@ -69,19 +82,18 @@ def split_data(arr, col, bound):
     col :
     bound :
     returns"""
-    sorted_arr = arr[arr[:, col].argsort()]
+    arr = arr[arr[:, col].argsort()]  # sort array
     left = arr[arr[:, col] > bound]
     right = arr[arr[:, col] < bound]
     return left, right
 
 
-def tree_learn(data, depth, tree):
+def tree_learn(data, depth, tree, max_depth):
     """method : tree_learn
     data :
     depth :
     tree : dictionnary of dictionnaries : this is the decision tree
     returns the score"""
-    max_depth = 2
     if depth == max_depth:
         unique, counts = np.unique(data[:, -1], return_counts=True)
         tree = unique[np.argmax(counts)]
@@ -94,28 +106,96 @@ def tree_learn(data, depth, tree):
     split["right"] = {}
     tree = split
     l_data, r_data = split_data(data, split["attribute"], split["value"])
-    l_branch, l_depth = tree_learn(l_data, depth + 1, split["left"])
-    r_branch, r_depth = tree_learn(r_data, depth + 1, split["right"])
+    l_branch, l_depth = tree_learn(l_data, depth + 1, split["left"], max_depth)
+    r_branch, r_depth = tree_learn(r_data, depth + 1, split["right"], max_depth)
     tree["left"] = l_branch
     tree["right"] = r_branch
 
     return tree, max(l_depth, r_depth)
 
 
-def predict(tree, data):
-    """method : predict
-    tree : dictionnary of dictionnaries : this is the decision tree
-    data : numpy array of floats : this is the data which is used to predict an outcome
-    returns the predicted label"""
-    if isinstance(tree, float):
+def evaluate_prune(
+    tree: dict, train: np.array, test: np.array, base_score: float, track: list
+) -> dict:
+    """Prune and evaluate whether we want to keep pruned tree or original tree."""
+    original = copy.deepcopy(tree)  # original tree
+    unique, counts = np.unique(train[:, -1], return_counts=True)
+    # chop off branches and turn into leaf
+    set_nested_value(tree, track, unique[np.argmax(counts)])
+    ### Prune score needs to be replaced by better error loss function ###
+    prune_score = evaluate(tree, test)  # currently just using f1 mean
+    if prune_score > base_score:
+        return tree  # pruned
+    return original
+
+
+def parse_tree(
+    tree: dict,
+    branch: dict,
+    train: np.array,
+    test: np.array,
+    base_score: float,
+    track: list,
+) -> dict:
+    """Recursively loop through tree until you get to bottom
+    and then prune appropriately once you reach the bottom.
+
+    tree: nested dictionary decision tree
+    branch: smaller segments of the tree as we go down the levels
+    train: training dataset
+    test: test set on which we evaluate. Used test to not confuse with evaluate function
+    base_score: the original score of decision tree before pruning
+    track: Keeps track of list of keys as we go down tree
+    """
+    # Initialize branch to be full tree before we recursively enter the branches
+    if branch is None:
+        branch = tree
+    if isinstance(branch, float):
         return tree
-    if data[tree['attribute']]>tree['value']:
-        return predict(tree['left'], data)
-    else:
-        return predict(tree['right'], data)
+    if isinstance(branch["left"], float):
+        # if pruning is worth it, the pruned tree becomes the base tree
+        tree = evaluate_prune(tree, train, test, base_score, track)
+        return tree
+    for i in ["left", "right"]:
+        init_track = copy.deepcopy(track)
+        track.append(i)
+        tree = parse_tree(tree, branch[i], train, test, base_score, track)
+        track = copy.deepcopy(
+            init_track
+        )  # reinitialise track for right after done with left
     return tree
 
+
+def set_nested_value(nested_dict, key_list, value):
+    """Set dict value given a list of keys"""
+    get_nested_value(nested_dict, key_list[:-1])[key_list[-1]] = value
+
+
+def get_nested_value(nested_dict, key_list):
+    """Fetch dict value given list of strings"""
+    return reduce(operator.getitem, key_list, nested_dict)
+
+
+#####################
+# This is how to run 
+#################
+# import tree as dt
+# import evaluation as ev
+# import numpy as np
+# import copy
 # data = np.loadtxt('noisy_dataset.txt')
-# tdict = tree_learn(data,0,0)
-# pprint.pprint(tdict[0])
-# predict(tdict[0],data[2,:-1]) # ROW, Class
+# size = data.shape[0]
+# train = data[:int(size*0.8), :]
+# test = data[int(size*0.8):, :]
+# tree, _ = dt.tree_learn(train, 0, {}, 5)
+# # dt.predict(tree, data[0, :])
+# base_tree = copy.deepcopy(tree)
+# base_score = ev.evaluate(base_tree, copy.deepcopy(test))
+# pruning_tree = copy.deepcopy(tree)
+# new_tree = dt.parse_tree(pruning_tree, None, train, test, base_score, [])
+# new_tree == tree
+
+
+
+
+
