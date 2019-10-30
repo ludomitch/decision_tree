@@ -34,11 +34,15 @@ def cross_validation(data, folds, test_percentage):
     # np.hstack((df, index)) # adding an index before shuffling
     np.random.shuffle(df)
 
+    test_scores = []
+    best_trees = []
     # Splitting Test from Validation and Training
     for i in range(folds):
         print("-------------------- Test/Train separation "+ str(i)+" --------------------")
         test_set, train_and_validate = split(df, i * split_size, split_size)
         
+        trained_trees = []
+        f1_scores = []
         # Splitting Validation from Training
         variance = np.zeros((4,folds-1))
         for j in range(folds - 1):
@@ -46,11 +50,8 @@ def cross_validation(data, folds, test_percentage):
             # Split Validation from Training
             validate, train = split(train_and_validate, j * split_size, split_size)
             # Train Tree on Training
-            print("Training Tree")
-            tree, depth = tree_learn(train, 0, tree = {}, max_depth=5)
-            print("Training done")
+            tree, depth = tree_learn(train, 0, tree = {}, max_depth=10)
             # Pruning
-            print("Pruning tree")
             uar, uap, f1, uac = evaluate(tree, validate, 4)  # for later use
             tree = parse_tree(tree, None, train, validate, f1, [])
             print("Pruning done")
@@ -61,15 +62,22 @@ def cross_validation(data, folds, test_percentage):
             variance[2,j] = f1
             variance[3,j] = uac
             tree_dictionary["tree_" + str(j)] = {"tree" : tree, "UAR" : uar, "UAP" : uap, "F1" : f1, "UAC" : uac}
+            trained_trees.append(tree)
+            f1_scores.append(f1)
 
+        # Evaluate best tree with test data
+        best_tree = trained_trees[np.argmax(f1_scores)]
+        best_trees.append(best_tree)
+        test_score = evaluate(best_tree, test_set, 4)
+        test_scores.append(test_score)
         print("\n----------- Compute Variances -----------\n")
         # Compute Variance on UAR, UAP, F1 and UAC (in this order)
-        print(variance.shape)
-        variance = np.var(variance, axis = 1)
-        print(variance.shape)
-        print("UAR : %.5f   UAP : %.5f   F1 : %.5f   UAC : %.5f"%(variance[0], variance[1], variance[2], variance[3]))
-        print("\n\n")
+        # print(variance.shape)
+        # variance = np.var(variance, axis = 1)
+        # print(variance.shape)
+        # print("UAR : %.5f   UAP : %.5f   F1 : %.5f   UAC : %.5f"%(variance[0], variance[1], variance[2], variance[3]))
+        # print("\n\n")
         # Each structure stores n-1 trees and the variances computed
-        tree_structures["structure_"+str(i)] = {"tree_struct" : tree_dictionary, "variances" : variance}
+        # tree_structures["structure_"+str(i)] = {"tree_struct" : tree_dictionary, "variances" : variance}
 
-    return tree_structures
+    return best_trees, test_scores
