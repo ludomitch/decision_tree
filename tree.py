@@ -60,10 +60,7 @@ def get_boundaries(arr,reduction):
 
 
 def find_split(data):
-    """method : find_split
-    data : array : this is the training set ?
-
-    returns"""
+    """Find best place to split data."""
     top_gain = 0
     split = {}
     for col in range(0, data.shape[1] - 1):  # don't include last col: label col
@@ -72,19 +69,21 @@ def find_split(data):
             if temp_gain > top_gain:
                 top_gain = temp_gain
                 split = {
-                    "attribute": col,
-                    "value": boundary,
+                    "wifi_signal": col,
+                    "dB": boundary,
+                    "info_label": find_leaf_value(data)
                 }  # unindent till out of first for loop...
 
     return split
 
+def find_leaf_value(data:np.array):
+    """Given a set of data, find most recurrent label"""
+    unique, counts = np.unique(data[:, -1], return_counts=True)
+    value = unique[np.argmax(counts)]
+    return value
 
 def split_data(arr, col, bound):
-    """method : split_data
-    arr :
-    col :
-    bound :
-    returns"""
+    """Sort and split data based on column and boundary."""
     arr = arr[arr[:, col].argsort()]  # sort array
     left = arr[arr[:, col] > bound]
     right = arr[arr[:, col] < bound]
@@ -108,7 +107,7 @@ def tree_learn(data, depth, tree, max_depth):
     split["left"] = {}
     split["right"] = {}
     tree = split
-    l_data, r_data = split_data(data, split["attribute"], split["value"])
+    l_data, r_data = split_data(data, split["wifi_signal"], split["dB"])
     l_branch, l_depth = tree_learn(l_data, depth + 1, split["left"], max_depth)
     r_branch, r_depth = tree_learn(r_data, depth + 1, split["right"], max_depth)
     tree["left"] = l_branch
@@ -184,8 +183,8 @@ def parse_tree(
     if branch is None:
         branch = tree
     if isinstance(branch, float):
-        return tree
-    if isinstance(branch["left"], float):
+        return tree, prune_count
+    if (isinstance(branch["left"], float))|(isinstance(branch['right'], float)):
         # if pruning is worth it, the pruned tree becomes the base tree
         tree = evaluate_prune(tree, train, test, base_score, track)
         return tree

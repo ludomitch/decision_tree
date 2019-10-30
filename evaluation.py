@@ -8,7 +8,7 @@ def predict(tree, data):
     returns the predicted label"""
     if isinstance(tree, float):
         return tree
-    if data[tree["attribute"]] > tree["value"]:
+    if data[tree["wifi_signal"]] > tree["dB"]:
         return predict(tree["left"], data)
     else:
         return predict(tree["right"], data)
@@ -41,7 +41,6 @@ def evaluate(tree, validation_set, nb_labels=4):
     recall_vect = np.zeros((1, nb_labels))
     prec_vect = np.zeros((1, nb_labels))
     classification_rate = np.zeros((1, nb_labels))
-
     for i in range(confusion_matrix.shape[0]):
         recall_vect[0, i] = confusion_matrix[i, i] / np.sum(confusion_matrix[i, :]) # Recall = TP/(TP + FN)
         prec_vect[0, i] = confusion_matrix[i, i] / np.sum(confusion_matrix[:, i]) # Precision = TP/(TP + FP)
@@ -51,10 +50,8 @@ def evaluate(tree, validation_set, nb_labels=4):
             + np.sum(confusion_matrix[i, :])
             - 2 * confusion_matrix[i, i]
         ) # Classification rate = (TP + TN)/(TP + TN + FP + FN)
-
     uar = np.mean(recall_vect) # Unweighted Average Recall
     uap = np.mean(prec_vect) # Unweighted Average Precision
     f1 = 2 * (uar * uap) / (uar + uap) # Compute F1
     uac = np.mean(classification_rate) # Unweighted Averate Classification Rate
-
     return uar, uap, f1, uac
