@@ -1,6 +1,6 @@
 import numpy as np
-from tree import predict, tree_learn
-from evaluation import evaluate
+from tree import tree_learn, parse_tree
+from evaluation import evaluate, predict
 def split(arr, pos, n):
     """method : split : takes an array, splits it in 2 uneven arrays.
     arr : array : The array to be split
@@ -47,10 +47,13 @@ def cross_validation(data, folds, test_percentage):
             validate, train = split(train_and_validate, j * split_size, split_size)
             # Train Tree on Training
             print("Training Tree")
-            tree, depth = tree_learn(train, depth = 3, tree = {})
-            print("Pruning not done yet\n")
+            tree, depth = tree_learn(train, 0, tree = {}, max_depth=5)
+            print("Training done")
             # Pruning
-            
+            print("Pruning tree")
+            uar, uap, f1, uac = evaluate(tree, validate, 4)  # for later use
+            tree = parse_tree(tree, None, train, validate, f1, [])
+            print("Pruning done")
             # Evaluate Tree on Validate
             uar, uap, f1, uac = evaluate(tree, validate, 4)  # for later use
             variance[0,j] = uar

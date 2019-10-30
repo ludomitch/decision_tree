@@ -55,6 +55,6 @@ def evaluate(tree, validation_set, nb_labels=4):
     uar = np.mean(recall_vect) # Unweighted Average Recall
     uap = np.mean(prec_vect) # Unweighted Average Precision
     f1 = 2 * (uar * uap) / (uar + uap) # Compute F1
-    uaclassifcation_rate = np.mean(classification_rate) # Unweighted Averate Classification Rate
+    uac = np.mean(classification_rate) # Unweighted Averate Classification Rate
 
-    return uar, uap, f1, uaclassifcation_rate
+    return uar, uap, f1, uac
