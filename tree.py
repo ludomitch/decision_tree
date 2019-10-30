@@ -43,15 +43,20 @@ def info_gain(s_all, bound):
     return entropy(sorted_arr[:, 1]) - remainder(s_left, s_right)
 
 
-def get_boundaries(arr):
+def get_boundaries(arr,reduction):
     """method : get_boundaries
     arr :
-
     returns"""
+    depth = 1
+
     unique = np.unique(arr.copy())
     x = unique[:-1]
     y = unique[1:]
-    return (x + y) / 2
+    boundary = (x + y) / 2
+
+    print('Boundary Cut {}'.format(reduction))
+
+    return boundary[::reduction]
 
 
 def find_split(data):
