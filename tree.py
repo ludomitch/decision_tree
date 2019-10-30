@@ -54,7 +54,7 @@ def get_boundaries(arr,reduction):
     y = unique[1:]
     boundary = (x + y) / 2
 
-    print('Boundary Cut {}'.format(reduction))
+    # print('Boundary Cut {}'.format(reduction))
 
     return boundary[::reduction]
 
@@ -116,42 +116,12 @@ def tree_learn(data, depth, tree, max_depth):
     return tree, max(l_depth, r_depth)
 
 
-def find_leaf_value(data: np.array, tree: dict, path: list) -> float:
-    """Go through tree, progressively filtering data."""
-    reduced_data = copy.deepcopy(data)
-    branch = copy.deepcopy(tree)
-    path = copy.deepcopy(path[:-1])
-    for k in path:
-        if np.all(
-            reduced_data[:, -1] == reduced_data[0, -1]
-        ):  # check if all labels are identical
-            return reduced_data[0, -1]
-        branch = branch[k]
-
-        filt = reduced_data[:, branch["attribute"]]
-        if k == "left":
-            temp = reduced_data[filt>branch['value']]
-            if temp.shape[0] == 0:
-                break
-            reduced_data = reduced_data[filt > branch["value"]]
-        else:
-            temp = reduced_data[filt<branch['value']]
-            if temp.shape[0] == 0:
-                break
-            reduced_data = reduced_data[filt < branch["value"]]
-
-
-    unique, counts = np.unique(reduced_data[:, -1], return_counts=True)
-
-    return unique[np.argmax(counts)]
-
-
 def evaluate_prune(
     tree: dict, train: np.array, test: np.array, base_score: float, track: list
 ) -> dict:
     """Prune and evaluate whether we want to keep pruned tree or original tree."""
     original = copy.deepcopy(tree)  # original tree
-    leaf_value = find_leaf_value(train, tree, track)
+    leaf_value = get_nested_value(tree, track)['info_label']
     set_nested_value(tree, track, leaf_value)
     # chop off branches and turn into leaf
     ### Prune score needs to be replaced by better error loss function ###
