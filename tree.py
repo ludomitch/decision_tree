@@ -67,7 +67,7 @@ def find_split(data):
     top_gain = 0
     split = {}
     for col in range(0, data.shape[1] - 1):  # don't include last col: label col
-        for boundary in get_boundaries(data[:, col]):
+        for boundary in get_boundaries(data[:, col],reduction = 1):
             temp_gain = info_gain(data[:, [col, -1]], boundary)
             if temp_gain > top_gain:
                 top_gain = temp_gain
