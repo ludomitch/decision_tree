@@ -1,5 +1,3 @@
-from functools import reduce  # forward compatibility for Python 3
-import operator
 import copy
 
 import numpy as np
@@ -114,14 +112,36 @@ def tree_learn(data, depth, tree, max_depth):
     return tree, max(l_depth, r_depth)
 
 
+def find_leaf_value(data: np.array, tree: dict, path: list) -> float:
+    """Go through tree, progressively filtering data."""
+    reduced_data = copy.deepcopy(data)
+    branch = copy.deepcopy(tree)
+    path = copy.deepcopy(path[:-1])
+    for k in path:
+        branch = branch[k]
+        filt = reduced_data[:, branch["attribute"]]
+        if k == "left":
+            reduced_data = reduced_data[filt > branch["value"]]
+        else:
+            reduced_data = reduced_data[filt < branch["value"]]
+
+        if np.all(
+            reduced_data[:, -1] == reduced_data[0, -1]
+        ):  # check if all labels are identical
+            return reduced_data[0, -1]
+    unique, counts = np.unique(reduced_data[:, -1], return_counts=True)
+
+    return unique[np.argmax(counts)]
+
+
 def evaluate_prune(
     tree: dict, train: np.array, test: np.array, base_score: float, track: list
 ) -> dict:
     """Prune and evaluate whether we want to keep pruned tree or original tree."""
     original = copy.deepcopy(tree)  # original tree
-    unique, counts = np.unique(train[:, -1], return_counts=True)
+    leaf_value = find_leaf_value(train, tree, track)
+    set_nested_value(tree, track, leaf_value)
     # chop off branches and turn into leaf
-    set_nested_value(tree, track, unique[np.argmax(counts)])
     ### Prune score needs to be replaced by better error loss function ###
     prune_score = evaluate(tree, test)  # currently just using f1 mean
     if prune_score > base_score:
@@ -166,19 +186,21 @@ def parse_tree(
     return tree
 
 
-def set_nested_value(nested_dict, key_list, value):
-    """Set dict value given a list of keys"""
-    get_nested_value(nested_dict, key_list[:-1])[key_list[-1]] = value
+def get_nested_value(nested_dict: dict, key_list: list):
+    for k in key_list:
+        nested_dict = nested_dict[k]
+    return nested_dict
 
 
-def get_nested_value(nested_dict, key_list):
-    """Fetch dict value given list of strings"""
-    return reduce(operator.getitem, key_list, nested_dict)
+def set_nested_value(nested_dict: dict, key_list: list, value: float):
+    for key in key_list[:-1]:
+        nested_dict = nested_dict.setdefault(key, {})
+    nested_dict[key_list[-1]] = value
 
 
 #####################
-# This is how to run 
-#################
+# This is how to run
+#####################
 # import tree as dt
 # import evaluation as ev
 # import numpy as np
@@ -194,8 +216,3 @@ def get_nested_value(nested_dict, key_list):
 # pruning_tree = copy.deepcopy(tree)
 # new_tree = dt.parse_tree(pruning_tree, None, train, test, base_score, [])
 # new_tree == tree
-
-
-
-
-
