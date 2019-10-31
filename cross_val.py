@@ -1,6 +1,9 @@
 import numpy as np
-from tree import tree_learn, parse_tree
-from evaluation import evaluate, predict
+from tree import tree_learn, run_pruning
+from evaluation import evaluate
+import config as cfg
+
+
 def split(arr, pos, n):
     """method : split : takes an array, splits it in 2 uneven arrays.
     arr : array : The array to be split
@@ -14,15 +17,17 @@ def split(arr, pos, n):
 
     return upper, lower
 
+
 def hyperparamters_list():
-    #Define the different potential sets of hyperparameters
+    """Define the different potential sets of hyperparameters"""
     hyparameters = []
     depths = [2, 3]
     boundaries = [1, 2]
     for m in range(len(depths)):
         for n in range(len(boundaries)):
-            hyparameters.append({"depth":depths[m], "boundary":boundaries[n]})
+            hyparameters.append({"depth": depths[m], "boundary": boundaries[n]})
     return hyparameters
+
 
 def cross_validation(data, folds, test_percentage):
     """method : cross_validation : we'll explain once it's finished
@@ -35,11 +40,7 @@ def cross_validation(data, folds, test_percentage):
     df = data.copy()
     split_size = int(test_percentage * df.shape[0])
 
-    tree_structures = {} # Trees trained on different test sets
-    tree_dictionary = {} # Trees trained on the same Validation + Training
-    tree_hyperparameters = {} # Trees trained with different hyperparamters
-
-    #Collecting the list of hyperparameters
+    # Collecting the list of hyperparameters
     hyperparameters = hyperparamters_list()
 
     # Keep index before shuffling
@@ -51,81 +52,48 @@ def cross_validation(data, folds, test_percentage):
     best_trees = []
     # Splitting Test from Validation and Training
     for i in range(folds):
-        print("-------------------- Test/Train separation "+ str(i)+" --------------------")
+        print(
+            "-------------------- Test/Train separation "
+            + str(i)
+            + " --------------------"
+        )
         test_set, train_and_validate = split(df, i * split_size, split_size)
 
-        trained_trees = []
-        f1_scores = []
         # Splitting Validation from Training
-        variance = np.zeros((4,folds-1))
-        for j in range(folds - 1):
-            print("------- Train/Validate separation "+ str(j)+" -------")
-            # Split Validation from Training
-            validate, train = split(train_and_validate, j * split_size, split_size)
-            # Train Tree on Training
-            tree, depth = tree_learn(train, 0, tree = {}, max_depth=10)
-            # Pruning
-            uar, uap, f1, uac = evaluate(tree, validate, 4)  # for later use
-            tree = parse_tree(tree, None, train, validate, f1, [])
-            print("Pruning done")
-            # Evaluate Tree on Validate
-            uar, uap, f1, uac = evaluate(tree, validate, 4)  # for later use
-            variance[0,j] = uar
-            variance[1,j] = uap
-            variance[2,j] = f1
-            variance[3,j] = uac
-            tree_dictionary["tree_" + str(j)] = {"tree" : tree, "UAR" : uar, "UAP" : uap, "F1" : f1, "UAC" : uac}
-            trained_trees.append(tree)
-            f1_scores.append(f1)
-
+        variance = np.zeros((4, folds - 1))
         # For all the sets of hyperparemeters dictionnary
-        for hyp in range(len(hyperparameters)):
+        for hyp in hyperparameters:
+            print(f"Running with hyperparameters: {hyp}")
             trained_trees = []
-            f1_scores = []
+            moi = []  # metric of interest
             # Splitting Validation from Training
-            variance = np.zeros((4,folds-1))
+            variance = np.zeros((4, folds - 1))
             for j in range(folds - 1):
-                print("------- Train/Validate separation "+ str(j)+" -------")
+                print("------- Train/Validate separation " + str(j) + " -------")
                 # Split Validation from Training
                 validate, train = split(train_and_validate, j * split_size, split_size)
                 # Train Tree on Training
-                print("Training Tree")
-                tree, depth = tree_learn(
-                                    train,
-                                    0,
-                                    tree = {},
-                                    max_depth = hyperparameters[hyp]["depth"],
-                                    reduction = hyperparameters[hyp]["boundary"])
-                print("Training done")
+                tree, _ = tree_learn(
+                    train, 0, tree={}, max_depth=hyp["depth"], reduction=hyp["boundary"]
+                )
                 # Pruning
-                print("Pruning tree")
-                uar, uap, f1, uac = evaluate(tree, validate, 4)  # for later use
+                metric_scores = evaluate(tree, validate)  # for later use
+                tree = run_pruning(
+                    tree, train, validate, metric_scores[cfg.METRIC_CHOICE]
+                )
 
-                tree = parse_tree(tree, None, train, validate, f1, [])
-                print("Pruning done")
-                # Evaluate Tree on Validate
-                uar, uap, f1, uac = evaluate(tree, validate, 4)  # for later use
-                variance[0,j] = uar
-                variance[1,j] = uap
-                variance[2,j] = f1
-                variance[3,j] = uac
-                tree_dictionary["tree_" + str(j)] = {"tree" : tree, "UAR" : uar, "UAP" : uap, "F1" : f1, "UAC" : uac}
+                # variance[0, j] = uar
+                # variance[1, j] = uap
+                # variance[2, j] = f1
+                # variance[3, j] = uac
+                # variance = np.var(variance, axis = 1)
+
                 trained_trees.append(tree)
-                f1_scores.append(f1)
+                moi.append(metric_scores[cfg.METRIC_CHOICE])
 
-            best_tree = trained_trees[np.argmax(f1_scores)]
+            best_tree = trained_trees[np.argmax(moi)]
             best_trees.append(best_tree)
-            test_score = evaluate(best_tree, test_set, 4)
+            test_score = evaluate(best_tree, test_set)
             test_scores.append(test_score)
-            print("\n----------- Compute Variances -----------\n")
-            # Compute Variance on UAR, UAP, F1 and UAC (in this order)
-            #print(variance.shape)
-            #variance = np.var(variance, axis = 1)
-            #print(variance.shape)
-            #print("UAR : %.5f   UAP : %.5f   F1 : %.5f   UAC : %.5f"%(variance[0], variance[1], variance[2], variance[3]))
-            #print("\n\n")
-            # Each structure stores n-1 trees and the variances computed
-            tree_hyperparameters["hyperparamters_"+str(hyp)] = {"tree_struct" : tree_dictionary, "variances" : variance}
-        tree_structures["fold_"+str(i)] = {"tree_given_fold" : tree_hyperparameters}
 
     return best_trees, test_scores

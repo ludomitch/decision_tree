@@ -1,0 +1,2 @@
+NB_LABELS = 4
+METRIC_CHOICE = 'f1'
