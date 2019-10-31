@@ -54,17 +54,20 @@ def get_boundaries(arr,reduction):
     y = unique[1:]
     boundary = (x + y) / 2
 
-    # print('Boundary Cut {}'.format(reduction))
+    print('Boundary Cut {}'.format(reduction))
 
     return boundary[::reduction]
 
 
-def find_split(data):
-    """Find best place to split data."""
+def find_split(data,reduction):
+    """method : find_split
+    data : array : this is the training set ?
+
+    returns"""
     top_gain = 0
     split = {}
     for col in range(0, data.shape[1] - 1):  # don't include last col: label col
-        for boundary in get_boundaries(data[:, col],reduction = 1):
+        for boundary in get_boundaries(data[:, col],reduction):
             temp_gain = info_gain(data[:, [col, -1]], boundary)
             if temp_gain > top_gain:
                 top_gain = temp_gain
@@ -90,7 +93,7 @@ def split_data(arr, col, bound):
     return left, right
 
 
-def tree_learn(data, depth, tree, max_depth):
+def tree_learn(data, depth, tree, max_depth,reduction):
     """method : tree_learn
     data :
     depth :
@@ -103,13 +106,13 @@ def tree_learn(data, depth, tree, max_depth):
     if np.all(data[:, -1] == data[0, -1]):  # check if all labels are identical
         tree = data[0, -1]
         return tree, depth
-    split = find_split(data)
+    split = find_split(data,reduction)
     split["left"] = {}
     split["right"] = {}
     tree = split
     l_data, r_data = split_data(data, split["wifi_signal"], split["dB"])
-    l_branch, l_depth = tree_learn(l_data, depth + 1, split["left"], max_depth)
-    r_branch, r_depth = tree_learn(r_data, depth + 1, split["right"], max_depth)
+    l_branch, l_depth = tree_learn(l_data, depth + 1, split["left"], max_depth, reduction)
+    r_branch, r_depth = tree_learn(r_data, depth + 1, split["right"], max_depth, reduction)
     tree["left"] = l_branch
     tree["right"] = r_branch
 
