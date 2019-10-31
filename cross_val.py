@@ -54,6 +54,30 @@ def cross_validation(data, folds, test_percentage):
         print("-------------------- Test/Train separation "+ str(i)+" --------------------")
         test_set, train_and_validate = split(df, i * split_size, split_size)
 
+        trained_trees = []
+        f1_scores = []
+        # Splitting Validation from Training
+        variance = np.zeros((4,folds-1))
+        for j in range(folds - 1):
+            print("------- Train/Validate separation "+ str(j)+" -------")
+            # Split Validation from Training
+            validate, train = split(train_and_validate, j * split_size, split_size)
+            # Train Tree on Training
+            tree, depth = tree_learn(train, 0, tree = {}, max_depth=10)
+            # Pruning
+            uar, uap, f1, uac = evaluate(tree, validate, 4)  # for later use
+            tree = parse_tree(tree, None, train, validate, f1, [])
+            print("Pruning done")
+            # Evaluate Tree on Validate
+            uar, uap, f1, uac = evaluate(tree, validate, 4)  # for later use
+            variance[0,j] = uar
+            variance[1,j] = uap
+            variance[2,j] = f1
+            variance[3,j] = uac
+            tree_dictionary["tree_" + str(j)] = {"tree" : tree, "UAR" : uar, "UAP" : uap, "F1" : f1, "UAC" : uac}
+            trained_trees.append(tree)
+            f1_scores.append(f1)
+
         # For all the sets of hyperparemeters dictionnary
         for hyp in range(len(hyperparameters)):
             trained_trees = []
