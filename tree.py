@@ -54,20 +54,15 @@ def get_boundaries(arr,reduction):
     y = unique[1:]
     boundary = (x + y) / 2
 
-    print('Boundary Cut {}'.format(reduction))
-
     return boundary[::reduction]
 
 
 def find_split(data,reduction):
-<<<<<<< Updated upstream
     """method : find_split
     data : array : this is the training set ?
 
     returns"""
-=======
     """Find best place to split data."""
->>>>>>> Stashed changes
     top_gain = 0
     split = {}
     for col in range(0, data.shape[1] - 1):  # don't include last col: label col
@@ -97,11 +92,7 @@ def split_data(arr, col, bound):
     return left, right
 
 
-<<<<<<< Updated upstream
 def tree_learn(data, depth, tree, max_depth,reduction):
-=======
-def tree_learn(data, depth, tree, max_depth, reduction):
->>>>>>> Stashed changes
     """method : tree_learn
     data :
     depth :
@@ -114,11 +105,7 @@ def tree_learn(data, depth, tree, max_depth, reduction):
     if np.all(data[:, -1] == data[0, -1]):  # check if all labels are identical
         tree = data[0, -1]
         return tree, depth
-<<<<<<< Updated upstream
     split = find_split(data,reduction)
-=======
-    split = find_split(data, reduction)
->>>>>>> Stashed changes
     split["left"] = {}
     split["right"] = {}
     tree = split
