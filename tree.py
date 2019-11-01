@@ -124,7 +124,7 @@ def evaluate_prune(
         cfg.METRIC_CHOICE
     ]  # currently just using f1 mean
 
-    if prune_score > base_score:
+    if prune_score > base_score: # SHALL IT BE = also???
         return tree, 1  # pruned
     return original, 0
 

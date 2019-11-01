@@ -64,4 +64,5 @@ def evaluate(tree: dict, validation_set: np.array):
     uap = np.mean(prec_vect)  # Unweighted Average Precision
     f1 = 2 * (uar * uap) / (uar + uap)  # Compute F1
     uac = np.mean(classification_rate)  # Unweighted Averate Classification Rate
+    # print("\n",confusion_matrix,"\n")
     return {"uar": uar, "uap": uap, "f1": f1, "uac": uac}

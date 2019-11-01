@@ -73,6 +73,7 @@ def cross_validation(data, folds, test_percentage):
                 print("------- Train/Validate separation " + str(j) + " -------")
                 # Split Validation from Training
                 validate, train = split(train_and_validate, j * split_size, split_size)
+                # print("---Test {}, Training {}, Eval {}".format(test_set.shape,train.shape,validate.shape))
                 # Train Tree on Training
                 tree, _ = tree_learn(
                     train, 0, tree={}, max_depth=hyp["depth"], reduction=hyp["boundary"]
@@ -99,10 +100,10 @@ def cross_validation(data, folds, test_percentage):
 
         #FINAL evaluate with test data
         tree,_ = tree_learn(train_and_validate, 0, tree={}, max_depth=best_hyper["depth"], reduction=best_hyper["boundary"])
-        tree, F1_score = run_pruning(tree, train_and_validate, test_set, metric_scores)
+        base_scores = evaluate(tree, test_set)
+        tree, F1_score = run_pruning(tree, train_and_validate, test_set, base_scores[cfg.METRIC_CHOICE])
         F1_hyper = evaluate(tree, test_set)[cfg.METRIC_CHOICE]
         global_F1.append(F1_hyper)
-
 
     # BEST HYPERPARAMETERS FOR ALL TEST CASES
     average_F1 = np.mean(global_F1)
