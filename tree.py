@@ -200,7 +200,7 @@ def run_pruning(
         sweep_counter += 1
         if new_count == old_count:
             bConv = True
-    return tree
+    return tree, base_score
 
 
 def get_nested_value(nested_dict: dict, key_list: list):

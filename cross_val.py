@@ -17,12 +17,11 @@ def split(arr, pos, n):
 
     return upper, lower
 
-
 def hyperparamters_list():
     """Define the different potential sets of hyperparameters"""
     hyparameters = []
-    depths = [2, 3]
-    boundaries = [1, 2]
+    depths = cfg.DEPTH
+    boundaries = cfg.BOUNDARIES
     for m in range(len(depths)):
         for n in range(len(boundaries)):
             hyparameters.append({"depth": depths[m], "boundary": boundaries[n]})
@@ -50,6 +49,8 @@ def cross_validation(data, folds, test_percentage):
 
     test_scores = []
     best_trees = []
+    global_best_hyperparams = []
+    global_F1 = []
     # Splitting Test from Validation and Training
     for i in range(folds):
         print(
@@ -58,14 +59,14 @@ def cross_validation(data, folds, test_percentage):
             + " --------------------"
         )
         test_set, train_and_validate = split(df, i * split_size, split_size)
-
         # Splitting Validation from Training
         variance = np.zeros((4, folds - 1))
+        err_all_hyperparams = []
         # For all the sets of hyperparemeters dictionnary
         for hyp in hyperparameters:
             print(f"Running with hyperparameters: {hyp}")
             trained_trees = []
-            moi = []  # metric of interest
+            moi = []  # metric of interest: i.e. F1
             # Splitting Validation from Training
             variance = np.zeros((4, folds - 1))
             for j in range(folds - 1):
@@ -77,23 +78,37 @@ def cross_validation(data, folds, test_percentage):
                     train, 0, tree={}, max_depth=hyp["depth"], reduction=hyp["boundary"]
                 )
                 # Pruning
-                metric_scores = evaluate(tree, validate)  # for later use
-                tree = run_pruning(
-                    tree, train, validate, metric_scores[cfg.METRIC_CHOICE]
+                base_scores = evaluate(tree,validate)  # for later use
+                tree, metric_scores = run_pruning(
+                    tree, train, validate, base_scores[cfg.METRIC_CHOICE]
                 )
-
                 # variance[0, j] = uar
                 # variance[1, j] = uap
                 # variance[2, j] = f1
                 # variance[3, j] = uac
                 # variance = np.var(variance, axis = 1)
 
-                trained_trees.append(tree)
-                moi.append(metric_scores[cfg.METRIC_CHOICE])
+                moi.append(metric_scores) #metric_scores is F1 only currently as se tin run_pruning output
 
-            best_tree = trained_trees[np.argmax(moi)]
-            best_trees.append(best_tree)
-            test_score = evaluate(best_tree, test_set)
-            test_scores.append(test_score)
+            # MAKE ERROR ESTIAMTE OF ALL folds for a given hyperparam
+            err_all_hyperparams.append(np.mean(moi))
 
-    return best_trees, test_scores
+        # APPEND ERROR ESTIMATE, HYPERPARMS
+        best_hyper = hyperparameters[np.argmax(err_all_hyperparams)]
+        global_best_hyperparams.append(best_hyper)
+
+        #FINAL evaluate
+        tree,_ = tree_learn(train_and_validate, 0, tree={}, max_depth=best_hyper["depth"], reduction=best_hyper["boundary"])
+        tree, F1_score = run_pruning(tree, train_and_validate, test_set, metric_scores)
+        F1_hyper = evaluate(tree, test_set)[cfg.METRIC_CHOICE]
+        global_F1.append(F1_hyper)
+
+
+    # BEST HYPERPARAMETERS FOR ALL TEST CASES
+    average_F1 = np.mean(global_F1)
+        # best_tree = trained_trees[np.argmax(moi)]
+        # test_score = evaluate(best_tree, test_set)
+        # best_trees.append(best_tree)
+        #test_scores.append(test_score)
+
+    return global_best_hyperparams, global_F1, average_F1
