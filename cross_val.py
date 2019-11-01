@@ -97,7 +97,7 @@ def cross_validation(data, folds, test_percentage):
         best_hyper = hyperparameters[np.argmax(err_all_hyperparams)]
         global_best_hyperparams.append(best_hyper)
 
-        #FINAL evaluate
+        #FINAL evaluate with test data
         tree,_ = tree_learn(train_and_validate, 0, tree={}, max_depth=best_hyper["depth"], reduction=best_hyper["boundary"])
         tree, F1_score = run_pruning(tree, train_and_validate, test_set, metric_scores)
         F1_hyper = evaluate(tree, test_set)[cfg.METRIC_CHOICE]
@@ -112,3 +112,50 @@ def cross_validation(data, folds, test_percentage):
         #test_scores.append(test_score)
 
     return global_best_hyperparams, global_F1, average_F1
+
+def param_tuning(data, folds,test_percentage):
+
+    global_best_hyperparams = []
+    global_F1 = []
+    df = data.copy()
+    split_size = int(test_percentage * df.shape[0])
+
+    hyperparameters = hyperparamters_list()
+    np.random.shuffle(df)
+
+    err_all_hyperparams = []
+
+    # For all the sets of hyperparemeters dictionnary
+    for hyp in hyperparameters:
+        print(f"Running with hyperparameters: {hyp}")
+        trained_trees = []
+        moi = []  # metric of interest: i.e. F1
+
+        for i in range(folds):
+            print(
+                "-------------------- Eval/Train separation "
+                + str(i)
+                + " --------------------"
+            )
+            # SPLIT DATAFRAME
+            eval_set, train_set = split(df, i * split_size, split_size)
+
+            # Train Tree on Training
+            tree, _ = tree_learn(
+                train_set, 0, tree={}, max_depth=hyp["depth"], reduction=hyp["boundary"]
+            )
+            # Pruning
+            base_scores = evaluate(tree,eval_set)  # for later use
+            tree, metric_scores = run_pruning(
+                tree, train_set, eval_set, base_scores[cfg.METRIC_CHOICE]
+            )
+
+            moi.append(metric_scores) #metric_scores is F1 only currently as se tin run_pruning output
+
+        err_all_hyperparams.append(np.mean(moi))
+
+    # APPEND ERROR ESTIMATE, HYPERPARMS
+    best_hyper = hyperparameters[np.argmax(err_all_hyperparams)]
+    F1_score = np.max(err_all_hyperparams)
+
+    return best_hyper, F1_score, err_all_hyperparams
