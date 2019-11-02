@@ -124,21 +124,6 @@ def recurs_plot(x,y, branch, alpha, beta, ax, srec = None):
     
     return
 
-# def plot_tree(tree, train, test):
-#     # Unpruned tree
-#     tr = copy.deepcopy(tree)
-#     ax = init_plot()
-#     recurs_plot(1, 5, tr, 15, 2, ax)
-#     plt.savefig('plot1.png')
-
-#     # Pruned tree
-#     base_score = ev.evaluate(tr, copy.deepcopy(test))['f1']
-#     pruned_tree = dt.run_pruning(tree, train, test, base_score)
-#     bx = init_plot()
-#     recurs_plot(1, 5, pruned_tree, 15, 2, bx)
-#     plt.savefig('plot2.png')
-#     return
-
 def plot_tree(tree, plot_name):
     # Unpruned tree
     tr = copy.deepcopy(tree)
@@ -150,9 +135,10 @@ def plot_tree(tree, plot_name):
 def final_plot(best_hyper, data='noisy_dataset'):
     data = np.loadtxt(data + '.txt')
     split_size = int(0.1 * data.shape[0])
+    np.random.shuffle(data)
     
-    test, train_and_validate = cv.split(data, 0 * split_size, split_size)
-    validate, train = cv.split(train_and_validate, 0 * split_size, split_size)
+    #test, train_and_validate = cv.split(data, 0 * split_size, split_size)
+    validate, train = cv.split(data, 0 * split_size, split_size)
     
     tree, _ = dt.tree_learn(train, 0, {}, best_hyper["depth"], best_hyper["boundary"])
     
