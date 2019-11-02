@@ -111,9 +111,7 @@ def tree_learn(
     return tree, max(l_depth, r_depth)
 
 
-def evaluate_prune(
-    tree: dict, test: np.array, base_score: float, track: list
-) -> dict:
+def evaluate_prune(tree: dict, test: np.array, base_score: float, track: list) -> dict:
     """Prune and evaluate whether we want to keep pruned tree or original tree."""
     original = copy.deepcopy(tree)  # original tree
     leaf_value = get_nested_value(tree, track)["info_label"]
@@ -124,7 +122,7 @@ def evaluate_prune(
         cfg.METRIC_CHOICE
     ]  # currently just using f1 mean
 
-    if prune_score > base_score: # SHALL IT BE = also???
+    if prune_score > base_score:  # SHALL IT BE = also???
         return tree, 1  # pruned
     return original, 0
 
