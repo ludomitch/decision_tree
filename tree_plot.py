@@ -1,5 +1,11 @@
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatch
+import copy
+import numpy as np
+import cross_val as cv
+import tree as dt
+import evaluation as ev
+import config as cfg
 
 def init_plot():
     fig, ax = plt.subplots(figsize=(20,20))
@@ -9,12 +15,12 @@ def init_plot():
     return ax
 
 def add_rectangle(x,y, text, ax):
-	color_map = {
+    color_map = {
     1: 'b',
     2: 'r',
     3: 'g',
     4: 'y'
-	}
+    }
     if 'room' in text:
         clr = color_map[int(text[-1])]
     else:
@@ -134,9 +140,26 @@ def recurs_plot(x,y, branch, alpha, beta, ax, srec = None):
 #     return
 
 def plot_tree(tree, plot_name):
-	# Unpruned tree
+    # Unpruned tree
     tr = copy.deepcopy(tree)
     ax = init_plot()
     recurs_plot(1, 5, tr, 15, 2, ax)
-    plt.savefig(plot_name + '.png')
+    plt.savefig(plot_name + '.eps')
     return
+
+def final_plot(best_hyper, data='noisy_dataset'):
+    data = np.loadtxt(data + '.txt')
+    split_size = int(0.1 * data.shape[0])
+    
+    test, train_and_validate = cv.split(data, 0 * split_size, split_size)
+    validate, train = cv.split(train_and_validate, 0 * split_size, split_size)
+    
+    tree, _ = dt.tree_learn(train, 0, {}, best_hyper["depth"], best_hyper["boundary"])
+    
+    plot_tree(tree, "Before_pruning")
+    
+    base_scores = ev.evaluate(tree, validate)
+    
+    tree, metric_scores = dt.run_pruning(tree, train, validate, base_scores[cfg.METRIC_CHOICE])
+    
+    plot_tree(tree, "After_pruning")
