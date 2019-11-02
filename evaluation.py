@@ -48,12 +48,16 @@ def evaluate(tree: dict, validation_set: np.array):
     prec_vect = np.zeros((1, cfg.NB_LABELS))
     classification_rate = np.zeros((1, cfg.NB_LABELS))
     for i in range(confusion_matrix.shape[0]):
-        recall_vect[0, i] = confusion_matrix[i, i] / np.sum(
-            confusion_matrix[i, :]
-        )  # Recall = TP/(TP + FN)
-        prec_vect[0, i] = confusion_matrix[i, i] / np.sum(
-            confusion_matrix[:, i]
-        )  # Precision = TP/(TP + FP)
+
+        recall_vect[0, i] = min(confusion_matrix[i, i] / np.sum(confusion_matrix[i, :]),
+        confusion_matrix[i, i]) # Recall = TP/(TP + FN)
+
+        prec_vect[0, i] = min(confusion_matrix[i, i] / np.sum(confusion_matrix[:, i]),
+        confusion_matrix[i, i]) # Precision = TP/(TP + FP)
+
+        if recall_vect[0, i] == confusion_matrix[i, i] or prec_vect[0, i]  == confusion_matrix[i, i]:
+            raise Exception("Floating Error. Unclassified State. Make tree larger or get some more data!")
+
         classification_rate[0, i] = np.trace(confusion_matrix) / (
             np.trace(confusion_matrix)
             + np.sum(confusion_matrix[:, i])
@@ -66,3 +70,5 @@ def evaluate(tree: dict, validation_set: np.array):
     uac = np.mean(classification_rate)  # Unweighted Averate Classification Rate
     # print("\n",confusion_matrix,"\n")
     return {"uar": uar, "uap": uap, "f1": f1, "uac": uac}
+
+#H

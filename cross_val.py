@@ -23,9 +23,11 @@ def hyperparamters_list() -> list:
     hyparameters = []
     depths = cfg.DEPTH
     boundaries = cfg.BOUNDARIES
+    pruning = cfg.PRUNING
     for m in range(len(depths)):
         for n in range(len(boundaries)):
-            hyparameters.append({"depth": depths[m], "boundary": boundaries[n]})
+            for k in range(len(pruning)):
+                hyparameters.append({"depth": depths[m], "boundary": boundaries[n],"prune":pruning[k]})
     return hyparameters
 
 
@@ -48,7 +50,7 @@ def cross_validation(data: np.array, folds: int, test_percentage: float) -> tupl
 
     # Initialise score trackers
     global_best_hyperparams = []
-    global_F1 = []
+    global_scores = []
 
     # Splitting Test from Validation and Training
     for i in range(folds):
@@ -77,10 +79,13 @@ def cross_validation(data: np.array, folds: int, test_percentage: float) -> tupl
                     train, 0, tree={}, max_depth=hyp["depth"], reduction=hyp["boundary"]
                 )
                 # Pruning
-                base_scores = evaluate(tree, validate)  # for later use
-                tree, metric_scores = run_pruning(
-                    tree, train, validate, base_scores[cfg.METRIC_CHOICE]
-                )
+                if hyp["prune"] == True:
+                    base_scores = evaluate(tree, validate)  # for later use
+                    tree, metric_scores = run_pruning(
+                        tree, train, validate, base_scores[cfg.METRIC_CHOICE]
+                    )
+                else:
+                    metric_scores = evaluate(tree, validate)[cfg.METRIC_CHOICE]
                 # variance[0, j] = uar
                 # variance[1, j] = uap
                 # variance[2, j] = f1
@@ -106,17 +111,26 @@ def cross_validation(data: np.array, folds: int, test_percentage: float) -> tupl
             max_depth=best_hyper["depth"],
             reduction=best_hyper["boundary"],
         )
-        base_scores = evaluate(tree, test_set)
-        tree, _ = run_pruning(
-            tree, train_and_validate, test_set, base_scores[cfg.METRIC_CHOICE]
-        )
-        F1_hyper = evaluate(tree, test_set)[cfg.METRIC_CHOICE]
-        global_F1.append(F1_hyper)
+
+        if best_hyper["prune"] == True:
+            base_scores = evaluate(tree, test_set)
+            tree, _ = run_pruning(
+                tree, train_and_validate, test_set, base_scores[cfg.METRIC_CHOICE]
+                )
+
+        score_hyper = evaluate(tree, test_set)#[cfg.METRIC_CHOICE]
+
+        global_scores.append(score_hyper)
 
     # BEST HYPERPARAMETERS FOR ALL TEST CASES
-    average_F1 = np.mean(global_F1)
+    base_dict = {}
+    for key in global_scores[0].keys():
+        base_dict[key] = 0
+        for i in range(np.size(global_scores)):
+            base_dict[key] += global_scores[i][key]
+        base_dict[key] = base_dict[key]/(i+1)
 
-    return global_best_hyperparams, global_F1, average_F1
+    return global_best_hyperparams, global_scores, base_dict
 
 
 def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
@@ -164,3 +178,5 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
     F1_score = np.max(err_all_hyperparams)
 
     return best_hyper, F1_score, err_all_hyperparams
+
+#H
