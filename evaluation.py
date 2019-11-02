@@ -55,8 +55,9 @@ def evaluate(tree: dict, validation_set: np.array):
         prec_vect[0, i] = min(confusion_matrix[i, i] / np.sum(confusion_matrix[:, i]),
         confusion_matrix[i, i]) # Precision = TP/(TP + FP)
 
-        if recall_vect[0, i] == confusion_matrix[i, i] or prec_vect[0, i]  == confusion_matrix[i, i]:
-            raise Exception("Floating Error. Unclassified State. Make tree larger or get some more data!")
+        # if recall_vect[0, i] == confusion_matrix[i, i] or prec_vect[0, i]  == confusion_matrix[i, i]:
+            
+        #     raise Exception("Floating Error. Unclassified State. Make tree larger or get some more data!")
 
         classification_rate[0, i] = np.trace(confusion_matrix) / (
             np.trace(confusion_matrix)

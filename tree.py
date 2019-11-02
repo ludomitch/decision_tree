@@ -122,7 +122,7 @@ def evaluate_prune(tree: dict, test: np.array, base_score: float, track: list) -
         cfg.METRIC_CHOICE
     ]  # currently just using f1 mean
 
-    if prune_score > base_score:  # SHALL IT BE = also???
+    if prune_score >= base_score:  # SHALL IT BE = also???
         return tree, 1  # pruned
     return original, 0
 

@@ -163,9 +163,12 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
             )
             # Pruning
             base_scores = evaluate(tree, eval_set)  # for later use
-            tree, metric_scores = run_pruning(
-                tree, train_set, eval_set, base_scores[cfg.METRIC_CHOICE]
-            )
+            if hyp['prune']:
+                tree, metric_scores = run_pruning(
+                    tree, train_set, eval_set, base_scores[cfg.METRIC_CHOICE]
+                )
+            else:
+                metric_scores = evaluate(tree, eval_set)[cfg.METRIC_CHOICE]
 
             moi.append(
                 metric_scores

@@ -12,14 +12,13 @@ Requirements:
 
 1. Install dependencies
 
-`pip install -r requirements.txt`
-
-
-## Installing dependencies
-
 Dependency management is done through pip.
 
-Using global pip3: `pip3 install -r requirements.txt`
+`pip3 install -r requirements.txt`
+
+2. Configuring tree
+
+You can change the hyperparameters explored as well as which dataset you wish to use in `config.py`. Should you want to use your own data, all you have to do is include it in the root directory named as `<dataset_name>_dataset.txt` and then change the DATASET variable in config.py to <dataset_name>.
 
 ## Available Scripts
 
@@ -29,7 +28,6 @@ From the root directory, you can run:
 
 Otherwise you can use the Jupyter Notebook `tree.ipynb` included in the root directory and follow the instructions on there.
 
-You can change the hyperparameters explored as well as which dataset you wish to use in config.py
 
 Note that to visualise the trees you will need to use the jupyter notebook.
 
