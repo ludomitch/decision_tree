@@ -186,6 +186,6 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
         err = np.array(err_all_hyperparams)
         var = np.array(err_all_hyperparams_var)
 
-        best_hyper = cv.hyperparamters_list()[np.argmax(err[:,2])]
+        best_hyper = hyperparamters_list()[np.argmax(err[:,2])]
 
     return best_hyper, err, var
