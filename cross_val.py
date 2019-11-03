@@ -151,7 +151,7 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
             cm += compute_cm(eval_set, tree)  # Confusion matrix of each fold
 
         # Average out the confusion matrix for each hyperparameter
-        cm = cm / i
+        cm = cm / (i+1)
         cm_list.append(cm)
 
         arr_scores = np.zeros((4, np.size(moi)))
