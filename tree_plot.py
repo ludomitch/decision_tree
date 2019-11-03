@@ -156,3 +156,4 @@ def final_plot(best_hyper, data="noisy_dataset"):
     )
 
     plot_tree(tree, "After_pruning")
+    return tree
