@@ -16,6 +16,28 @@ def predict(tree: dict, data: np.array) -> dict:
     return tree
 
 
+def compute_cm(dataset, tree):
+    confusion_matrix = np.zeros((cfg.NB_LABELS, cfg.NB_LABELS))
+
+    for i in range(dataset.shape[0]):  # For each line from the validation set
+
+        if (
+            predict(tree, dataset[i, :]) == dataset[i, -1]
+        ):  # If the tree predicted the label correctly
+            confusion_matrix[
+                int(dataset[i, -1]) - 1, int(dataset[i, -1]) - 1
+            ] += 1  # At position (correct label, correct label) we add 1
+
+        elif (
+            predict(tree, dataset[i, :]) != dataset[i, -1]
+        ):  # If the tree predicted wrongly
+            confusion_matrix[
+                int(dataset[i, -1]) - 1,
+                int(predict(tree, dataset[i, :])) - 1,
+            ] += 1  # At position (correct label, predicted label) we add 1
+    return confusion_matrix
+
+
 def evaluate(tree: dict, validation_set: np.array) -> dict:
     """Evaluates the accuracy of the predictions made by a tree
     tree : dictionnary of dictionnaries : this is the decision tree
@@ -23,25 +45,8 @@ def evaluate(tree: dict, validation_set: np.array) -> dict:
     returns uar, uap, f1 and the classification rate (see lecture notes)"""
 
     # Create the confusion matrix
-    confusion_matrix = np.zeros((cfg.NB_LABELS, cfg.NB_LABELS))
-
-    for i in range(validation_set.shape[0]):  # For each line from the validation set
-
-        if (
-            predict(tree, validation_set[i, :]) == validation_set[i, -1]
-        ):  # If the tree predicted the label correctly
-            confusion_matrix[
-                int(validation_set[i, -1]) - 1, int(validation_set[i, -1]) - 1
-            ] += 1  # At position (correct label, correct label) we add 1
-
-        elif (
-            predict(tree, validation_set[i, :]) != validation_set[i, -1]
-        ):  # If the tree predicted wrongly
-            confusion_matrix[
-                int(validation_set[i, -1]) - 1,
-                int(predict(tree, validation_set[i, :])) - 1,
-            ] += 1  # At position (correct label, predicted label) we add 1
-
+    confusion_matrix = compute_cm(validation_set, tree)
+    
     # Initializing Recall, Precision and Classification rate
     recall_vect = np.zeros((1, cfg.NB_LABELS))
     prec_vect = np.zeros((1, cfg.NB_LABELS))
