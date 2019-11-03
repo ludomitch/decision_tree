@@ -183,8 +183,9 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
         err_all_hyperparams.append(means)
         err_all_hyperparams_var.append(variances)
 
-    # APPEND ERROR ESTIMATE, HYPERPARMS
-    best_hyper = hyperparameters[np.argmax(err_all_hyperparams)]
-    F1_score = np.max(err_all_hyperparams)
+        err = np.array(err_all_hyperparams)
+        var = np.array(err_all_hyperparams_var)
 
-    return best_hyper, F1_score, err_all_hyperparams, err_all_hyperparams_var, moi
+        best_hyper = cv.hyperparamters_list()[np.argmax(err[:,2])]
+
+    return best_hyper, err, var
