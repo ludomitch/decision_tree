@@ -62,10 +62,8 @@ def evaluate(tree: dict, validation_set: np.array) -> dict:
             confusion_matrix[i, i] / np.sum(confusion_matrix[:, i]),
             confusion_matrix[i, i],
         )  # Precision = TP/(TP + FP)
-
-        # if recall_vect[0, i] == confusion_matrix[i, i] or prec_vect[0, i]  == confusion_matrix[i, i]:
-
-        #     raise Exception("Floating Error. Unclassified State. Make tree larger or get some more data!")
+        
+        # possibility to raise an error TBC
 
         classification_rate[0, i] = np.trace(confusion_matrix) / (
             np.trace(confusion_matrix)
@@ -73,12 +71,10 @@ def evaluate(tree: dict, validation_set: np.array) -> dict:
             + np.sum(confusion_matrix[i, :])
             - 2 * confusion_matrix[i, i]
         )  # Classification rate = (TP + TN)/(TP + TN + FP + FN)
+        
     uar = np.mean(recall_vect)  # Unweighted Average Recall
     uap = np.mean(prec_vect)  # Unweighted Average Precision
     f1 = 2 * (uar * uap) / (uar + uap)  # Compute F1
     uac = np.mean(classification_rate)  # Unweighted Averate Classification Rate
-    # print("\n",confusion_matrix,"\n")
+    
     return {"uar": uar, "uap": uap, "f1": f1, "uac": uac}
-
-
-# H
