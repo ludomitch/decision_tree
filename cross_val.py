@@ -5,7 +5,7 @@ import config as cfg
 
 
 def split(arr, pos, n):
-    """method : split : takes an array, splits it in 2 uneven arrays.
+    """takes an array, splits it in 2 uneven arrays.
     arr : array : The array to be split
     pos : int : the position on which the split occurs
     n : int : the number of rows to take when splitting
@@ -19,7 +19,7 @@ def split(arr, pos, n):
 
 
 def hyperparamters_list() -> list:
-    """Define the different potential sets of hyperparameters"""
+    """Define the different potential combinations of hyperparameters"""
     hyparameters = []
     depths = cfg.DEPTH
     boundaries = cfg.BOUNDARIES
@@ -27,12 +27,14 @@ def hyperparamters_list() -> list:
     for m in range(len(depths)):
         for n in range(len(boundaries)):
             for k in range(len(pruning)):
-                hyparameters.append({"depth": depths[m], "boundary": boundaries[n],"prune":pruning[k]})
+                hyparameters.append(
+                    {"depth": depths[m], "boundary": boundaries[n], "prune": pruning[k]}
+                )
     return hyparameters
 
 
 def cross_validation(data: np.array, folds: int, test_percentage: float) -> tuple:
-    """method : cross_validation : we'll explain once it's finished
+    """Conduct cross validation
         data : array : this is the complete dataset used
         folds : int : how many folds are used during cross validation
         test_percentage : float : the percentage of the dataset to be used for testing
@@ -61,14 +63,12 @@ def cross_validation(data: np.array, folds: int, test_percentage: float) -> tupl
         )
         test_set, train_and_validate = split(df, i * split_size, split_size)
         # Splitting Validation from Training
-        # variance = np.zeros((4, folds - 1))
         err_all_hyperparams = []
         # For all the sets of hyperparemeters dictionnary
         for hyp in hyperparameters:
             print(f"Running with hyperparameters: {hyp}")
             moi = []  # metric of interest: i.e. F1
             # Splitting Validation from Training
-            # variance = np.zeros((4, folds - 1))
             for j in range(folds - 1):
                 print("------- Train/Validate separation " + str(j) + " -------")
                 # Split Validation from Training
@@ -79,18 +79,13 @@ def cross_validation(data: np.array, folds: int, test_percentage: float) -> tupl
                     train, 0, tree={}, max_depth=hyp["depth"], reduction=hyp["boundary"]
                 )
                 # Pruning
-                if hyp["prune"] == True:
+                if hyp["prune"]:
                     base_scores = evaluate(tree, validate)  # for later use
                     tree, metric_scores = run_pruning(
                         tree, train, validate, base_scores[cfg.METRIC_CHOICE]
                     )
                 else:
                     metric_scores = evaluate(tree, validate)[cfg.METRIC_CHOICE]
-                # variance[0, j] = uar
-                # variance[1, j] = uap
-                # variance[2, j] = f1
-                # variance[3, j] = uac
-                # variance = np.var(variance, axis = 1)
 
                 moi.append(
                     metric_scores
@@ -112,13 +107,13 @@ def cross_validation(data: np.array, folds: int, test_percentage: float) -> tupl
             reduction=best_hyper["boundary"],
         )
 
-        if best_hyper["prune"] == True:
+        if best_hyper["prune"]:
             base_scores = evaluate(tree, test_set)
             tree, _ = run_pruning(
                 tree, train_and_validate, test_set, base_scores[cfg.METRIC_CHOICE]
-                )
+            )
 
-        score_hyper = evaluate(tree, test_set)#[cfg.METRIC_CHOICE]
+        score_hyper = evaluate(tree, test_set)  # [cfg.METRIC_CHOICE]
 
         global_scores.append(score_hyper)
 
@@ -128,13 +123,13 @@ def cross_validation(data: np.array, folds: int, test_percentage: float) -> tupl
         base_dict[key] = 0
         for i in range(np.size(global_scores)):
             base_dict[key] += global_scores[i][key]
-        base_dict[key] = base_dict[key]/(i+1)
+        base_dict[key] = base_dict[key] / (i + 1)
 
     return global_best_hyperparams, global_scores, base_dict
 
 
 def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
-
+    """Run parameter tuning."""
     df = data.copy()
     split_size = int(test_percentage * df.shape[0])
 
@@ -163,7 +158,7 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
             )
             # Pruning
             base_scores = evaluate(tree, eval_set)  # for later use
-            if hyp['prune']:
+            if hyp["prune"]:
                 tree, metric_scores = run_pruning(
                     tree, train_set, eval_set, base_scores[cfg.METRIC_CHOICE]
                 )
@@ -182,4 +177,5 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
 
     return best_hyper, F1_score, err_all_hyperparams
 
-#H
+
+# H

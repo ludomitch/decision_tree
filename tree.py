@@ -82,11 +82,13 @@ def split_data(arr: np.array, col: int, bound: float) -> tuple:
 def tree_learn(
     data: np.array, depth: int, tree: dict, max_depth: int, reduction: float
 ) -> dict:
-    """method : tree_learn
-    data :
-    depth :
+    """Creates a decision tree based on a set of data and a max_depth parameter
+    data : data to parse
+    depth : keeps track of depth of decision tree
     tree : dictionnary of dictionnaries : this is the decision tree
-    returns the score"""
+    max_depth: depth at which to stop creating branches
+    reduction: sets the boundary for information gain potential splits
+    returns the completed decision tree"""
     if depth == max_depth:
         unique, counts = np.unique(data[:, -1], return_counts=True)
         tree = unique[np.argmax(counts)]
@@ -201,14 +203,14 @@ def run_pruning(
     return tree, base_score
 
 
-def get_nested_value(nested_dict: dict, key_list: list):
+def get_nested_value(nested_dict: dict, key_list: list) -> dict:
     """Retrieve a value in a nested dictionary given a list of keys."""
     for k in key_list:
         nested_dict = nested_dict[k]
     return nested_dict
 
 
-def set_nested_value(nested_dict: dict, key_list: list, value: float):
+def set_nested_value(nested_dict: dict, key_list: list, value: float) -> None:
     """Set a value in a nested dictionary given a list of keys."""
     for key in key_list[:-1]:
         nested_dict = nested_dict.setdefault(key, {})

@@ -2,8 +2,8 @@ import numpy as np
 import config as cfg
 
 
-def predict(tree: dict, data: np.array):
-    """
+def predict(tree: dict, data: np.array) -> dict:
+    """Predicts the room nmumber based on 7 wifi signals
     tree : dictionnary of dictionnaries : this is the decision tree
     data : numpy array of floats : this is the data which is used to predict an outcome
     returns the predicted label"""
@@ -16,11 +16,10 @@ def predict(tree: dict, data: np.array):
     return tree
 
 
-def evaluate(tree: dict, validation_set: np.array):
-    """evaluate : method : evaluates the accuracy of the predictions made by a tree
+def evaluate(tree: dict, validation_set: np.array) -> dict:
+    """Evaluates the accuracy of the predictions made by a tree
     tree : dictionnary of dictionnaries : this is the decision tree
     validation_set : array : dataset used for validation
-    cfg.NB_LABELS : int : number of labels to classify
     returns uar, uap, f1 and the classification rate (see lecture notes)"""
 
     # Create the confusion matrix
@@ -49,14 +48,18 @@ def evaluate(tree: dict, validation_set: np.array):
     classification_rate = np.zeros((1, cfg.NB_LABELS))
     for i in range(confusion_matrix.shape[0]):
 
-        recall_vect[0, i] = min(confusion_matrix[i, i] / np.sum(confusion_matrix[i, :]),
-        confusion_matrix[i, i]) # Recall = TP/(TP + FN)
+        recall_vect[0, i] = min(
+            confusion_matrix[i, i] / np.sum(confusion_matrix[i, :]),
+            confusion_matrix[i, i],
+        )  # Recall = TP/(TP + FN)
 
-        prec_vect[0, i] = min(confusion_matrix[i, i] / np.sum(confusion_matrix[:, i]),
-        confusion_matrix[i, i]) # Precision = TP/(TP + FP)
+        prec_vect[0, i] = min(
+            confusion_matrix[i, i] / np.sum(confusion_matrix[:, i]),
+            confusion_matrix[i, i],
+        )  # Precision = TP/(TP + FP)
 
         # if recall_vect[0, i] == confusion_matrix[i, i] or prec_vect[0, i]  == confusion_matrix[i, i]:
-            
+
         #     raise Exception("Floating Error. Unclassified State. Make tree larger or get some more data!")
 
         classification_rate[0, i] = np.trace(confusion_matrix) / (
@@ -72,4 +75,5 @@ def evaluate(tree: dict, validation_set: np.array):
     # print("\n",confusion_matrix,"\n")
     return {"uar": uar, "uap": uap, "f1": f1, "uac": uac}
 
-#H
+
+# H

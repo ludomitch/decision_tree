@@ -1,9 +1,11 @@
 NB_LABELS = 4
-METRIC_CHOICE = 'f1'
+METRIC_CHOICE = "f1"
 
-#HYPERPARAMETERS
-DEPTH = [5,6,7]
-BOUNDARIES = [1, 2, 4]
-PRUNING = [True,False]
+# HYPERPARAMETERS
+DEPTH = [2, 4, 6, 8, 10, 12]
+BOUNDARIES = [2]
 
-#H
+PRUNING = [True]
+
+# H
+DATASET = "clean"  # clean
