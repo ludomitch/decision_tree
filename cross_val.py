@@ -137,6 +137,7 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
     np.random.shuffle(df)
 
     err_all_hyperparams = []
+    err_all_hyperparams_var = []
 
     # For all the sets of hyperparemeters dictionnary
     for hyp in hyperparameters:
@@ -158,24 +159,32 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
             )
             # Pruning
             base_scores = evaluate(tree, eval_set)  # for later use
-            if hyp["prune"]:
-                tree, metric_scores = run_pruning(
+            if hyp['prune']:
+                tree, _ = run_pruning(
                     tree, train_set, eval_set, base_scores[cfg.METRIC_CHOICE]
                 )
-            else:
-                metric_scores = evaluate(tree, eval_set)[cfg.METRIC_CHOICE]
+            metric_scores = evaluate(tree, eval_set) # [cfg.METRIC_CHOICE]
 
             moi.append(
                 metric_scores
             )  # metric_scores is F1 only currently as se tin run_pruning output
 
-        err_all_hyperparams.append(np.mean(moi))
+        base_dict = {}
+
+        arr_scores = np.zeros((4,np.size(moi)))
+        for index, key in enumerate("uar uap f1 uac".split()):
+            base_dict[key] = 0
+            for i in range(np.size(moi)):
+                arr_scores[index,i] = moi[i][key]
+        variances = np.var(arr_scores,axis = 1)
+        means = np.mean(arr_scores,axis = 1)
+
+        #for key in "uar uap f1 uac".split():
+        err_all_hyperparams.append(means)
+        err_all_hyperparams_var.append(variances)
 
     # APPEND ERROR ESTIMATE, HYPERPARMS
     best_hyper = hyperparameters[np.argmax(err_all_hyperparams)]
     F1_score = np.max(err_all_hyperparams)
 
-    return best_hyper, F1_score, err_all_hyperparams
-
-
-# H
+    return best_hyper, F1_score, err_all_hyperparams, err_all_hyperparams_var, moi
