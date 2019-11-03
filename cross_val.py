@@ -53,9 +53,7 @@ def cross_validation(data: np.array, folds: int, test_percentage: float) -> tupl
 
     # Splitting Test from Validation and Training
     for i in range(folds):
-        print(
-            f"-------------------- Test/Train separation {i} --------------------"
-        )
+        print(f"-------------------- Test/Train separation {i} --------------------")
         test_set, train_and_validate = split(df, i * split_size, split_size)
         # Splitting Validation from Training
         err_all_hyperparams = []
@@ -73,16 +71,11 @@ def cross_validation(data: np.array, folds: int, test_percentage: float) -> tupl
                 )
                 # Pruning
                 if hyp["prune"]:
-                    base_scores = evaluate(tree, validate)  # for later use
-                    tree, metric_scores = run_pruning(
-                        tree, train, validate, base_scores[cfg.METRIC_CHOICE]
-                    )
-                else: # Return score of unpruned tree
+                    tree, metric_scores = run_pruning(tree, train, validate)
+                else:  # Return score of unpruned tree
                     metric_scores = evaluate(tree, validate)[cfg.METRIC_CHOICE]
 
-                moi.append(
-                    metric_scores
-                )  # metric_scores is a single metric
+                moi.append(metric_scores)  # metric_scores is a single metric
 
             # Make error estimate of all folds for a given hyperparam
             err_all_hyperparams.append(np.mean(moi))
@@ -102,12 +95,9 @@ def cross_validation(data: np.array, folds: int, test_percentage: float) -> tupl
 
         # Pruning
         if best_hyper["prune"]:
-            base_scores = evaluate(tree, test_set)
-            tree, _ = run_pruning(
-                tree, train_and_validate, test_set, base_scores[cfg.METRIC_CHOICE]
-            )
+            tree, _ = run_pruning(tree, train_and_validate, test_set)
         # Store and append all scores for the test set
-        score_hyper = evaluate(tree, test_set)  
+        score_hyper = evaluate(tree, test_set)
         global_scores.append(score_hyper)
 
     # Create dictionary of best hyperparameters for all test sets.
@@ -131,17 +121,17 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
 
     err_all_hyperparams = []
     err_all_hyperparams_var = []
-    
+
     cm_list = []
 
     # For all the sets of hyperparemeters dictionnary
     for hyp in hyperparameters:
         print(f"Running with hyperparameters: {hyp}")
-        moi = []  # metric of interest: i.e. F1
+        moi = []  # metric of interest: eg F1
 
-        cm = np.zeros((4,4))
+        cm = np.zeros((4, 4))
         for i in range(folds):
-            
+
             # Split data into evaluation and training datasets
             eval_set, train_set = split(df, i * split_size, split_size)
 
@@ -150,40 +140,41 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
                 train_set, 0, tree={}, max_depth=hyp["depth"], reduction=hyp["boundary"]
             )
             # Run pruning if hyperparameter says to do so
-            base_scores = evaluate(tree, eval_set)  # for later use
-            if hyp['prune']:
-                tree, _ = run_pruning(
-                    tree, train_set, eval_set, base_scores[cfg.METRIC_CHOICE]
-                )
-            metric_scores = evaluate(tree, eval_set) # [cfg.METRIC_CHOICE]
+            if hyp["prune"]:
+                tree, _ = run_pruning(tree, train_set, eval_set)
+            metric_scores = evaluate(tree, eval_set)  # [cfg.METRIC_CHOICE]
 
             moi.append(
                 metric_scores
             )  # metric_scores is F1 only currently as se tin run_pruning output
-            
-            cm += compute_cm(eval_set, tree) # Confusion matrix of each fold
-            
+
+            cm += compute_cm(eval_set, tree)  # Confusion matrix of each fold
+
         # Average out the confusion matrix for each hyperparameter
-        cm = cm/i
+        cm = cm / i
         cm_list.append(cm)
 
-        base_dict = {}
-
-        arr_scores = np.zeros((4,np.size(moi)))
-        for index, key in enumerate(['uar', 'uap', 'f1', 'uac']):
-            base_dict[key] = 0
+        arr_scores = np.zeros((4, np.size(moi)))
+        metrics = ["uar", "uap", "f1", "uac"]
+        for index, key in enumerate(metrics):
             for i in range(np.size(moi)):
-                arr_scores[index,i] = moi[i][key]
-        variances = np.var(arr_scores,axis = 1)
-        means = np.mean(arr_scores,axis = 1)
+                arr_scores[index, i] = moi[i][key]
+        variances = np.var(arr_scores, axis=1)
+        means = np.mean(arr_scores, axis=1)
+
+        # Format scores to display
+        formatted_scores = {i: round(means[c], 2) for c, i in enumerate(metrics)}
+        print(f"Final scores for above hyperparameters: {formatted_scores}\n")
 
         err_all_hyperparams.append(means)
         err_all_hyperparams_var.append(variances)
 
     err = np.array(err_all_hyperparams)
     var = np.array(err_all_hyperparams_var)
+    best_hyper = hyperparamters_list()[np.argmax(err[:, 2])]
 
-    best_hyper = hyperparamters_list()[np.argmax(err[:,2])]
-    print("\nBest averaged confusion matrix : \n",cm_list[np.argmax(err[:,2])])
+    # Display final confusion matrix
+    formatted_cm = np.round(cm_list[np.argmax(err[:, 2])], 2)
+    print("\nBest averaged confusion matrix : \n", formatted_cm)
 
-    return best_hyper, err, var, cm_list[np.argmax(err[:,2])]
+    return best_hyper, err, var, cm_list[np.argmax(err[:, 2])]

@@ -93,7 +93,7 @@ def tree_learn(
     # Stop recursion if we reach the max_depth of the tree
     if depth == max_depth:
         unique, counts = np.unique(data[:, -1], return_counts=True)
-        tree = unique[np.argmax(counts)] # Output most recurrent label
+        tree = unique[np.argmax(counts)]  # Output most recurrent label
         return tree, depth
     # Stop recursion if there is only one label in the data segment
     if np.all(data[:, -1] == data[0, -1]):  # check if all labels are identical
@@ -127,9 +127,7 @@ def evaluate_prune(tree: dict, test: np.array, base_score: float, track: list) -
     leaf_value = get_nested_value(tree, track)["info_label"]
     set_nested_value(tree, track, leaf_value)
     # Score the new pruned tree
-    prune_score = evaluate(tree, test)[
-        cfg.METRIC_CHOICE
-    ]
+    prune_score = evaluate(tree, test)[cfg.METRIC_CHOICE]
     # Compare the pruned tree with the original tree
     if prune_score >= base_score:
         return tree, 1  # pruned
@@ -164,7 +162,7 @@ def prune_tree(
     if isinstance(branch, float):
         return tree, prune_count
     # One step look aheads allow us to see if next level down there are leafs on both
-    # sides, in which case we can prune–or not 
+    # sides, in which case we can prune–or not
     if (isinstance(branch["left"], float)) and (isinstance(branch["right"], float)):
         # if pruning is worth it, the pruned tree becomes the base tree
         tree, prune_bool = evaluate_prune(tree, test, base_score, track)
@@ -184,11 +182,12 @@ def prune_tree(
     return tree, prune_count
 
 
-def run_pruning(
-    tree: dict, train: np.array, test: np.array, base_score: float
-) -> tuple:
+def run_pruning(tree: dict, train: np.array, test: np.array) -> tuple:
     """Runs the prune_tree function until there is no more pruning to be done
     as it would not increase the evaluation score."""
+
+    # Get first base score
+    base_score = evaluate(tree, test)[cfg.METRIC_CHOICE]
 
     keep_pruning = True
     new_prune_count = 0
@@ -196,7 +195,7 @@ def run_pruning(
         old_prune_count = new_prune_count
         # Run one sweep of prunes at bottomest depths of tree
         tree, prunes = prune_tree(tree, None, train, test, base_score, [], 0)
-        new_prune_count = old_prune_count + prunes # Update prune count
+        new_prune_count = old_prune_count + prunes  # Update prune count
 
         # Change Base score at each iteration
         base_score = evaluate(tree, test)[cfg.METRIC_CHOICE]

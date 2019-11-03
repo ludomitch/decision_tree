@@ -87,7 +87,6 @@ def find_input(branch, l_r):
     return res
 
 
-
 def recurs_plot(x, y, branch, alpha, beta, ax, srec=None):
     if isinstance(branch["left"], float) & isinstance(branch["right"], float):
         for side in ["left", "right"]:
@@ -135,25 +134,3 @@ def plot_tree(tree, plot_name):
     recurs_plot(1, 5, tr, 15, 2, ax)
     plt.savefig(plot_name + ".eps")
     return
-
-
-def final_plot(best_hyper, data="noisy_dataset"):
-    data = np.loadtxt(data + ".txt")
-    split_size = int(0.1 * data.shape[0])
-    np.random.shuffle(data)
-
-    # test, train_and_validate = cv.split(data, 0 * split_size, split_size)
-    validate, train = cv.split(data, 0 * split_size, split_size)
-
-    tree, _ = dt.tree_learn(train, 0, {}, best_hyper["depth"], best_hyper["boundary"])
-
-    plot_tree(tree, "Before_pruning")
-
-    base_scores = ev.evaluate(tree, validate)
-
-    tree, metric_scores = dt.run_pruning(
-        tree, train, validate, base_scores[cfg.METRIC_CHOICE]
-    )
-
-    plot_tree(tree, "After_pruning")
-    return tree

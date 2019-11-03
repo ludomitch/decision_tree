@@ -16,24 +16,23 @@ def predict(tree: dict, data: np.array) -> dict:
     return tree
 
 
-def compute_cm(dataset, tree):
+def compute_cm(data: np.array, tree: dict) -> np.array:
+    """Computes the confusion matrix for a given dataset and tree."""
+
     confusion_matrix = np.zeros((cfg.NB_LABELS, cfg.NB_LABELS))
 
-    for i in range(dataset.shape[0]):  # For each line from the validation set
+    for i in range(data.shape[0]):  # For each row from the validation set
 
         if (
-            predict(tree, dataset[i, :]) == dataset[i, -1]
+            predict(tree, data[i, :]) == data[i, -1]
         ):  # If the tree predicted the label correctly
             confusion_matrix[
-                int(dataset[i, -1]) - 1, int(dataset[i, -1]) - 1
+                int(data[i, -1]) - 1, int(data[i, -1]) - 1
             ] += 1  # At position (correct label, correct label) we add 1
 
-        elif (
-            predict(tree, dataset[i, :]) != dataset[i, -1]
-        ):  # If the tree predicted wrongly
+        elif predict(tree, data[i, :]) != data[i, -1]:  # If the tree predicted wrongly
             confusion_matrix[
-                int(dataset[i, -1]) - 1,
-                int(predict(tree, dataset[i, :])) - 1,
+                int(data[i, -1]) - 1, int(predict(tree, data[i, :])) - 1
             ] += 1  # At position (correct label, predicted label) we add 1
     return confusion_matrix
 
@@ -46,7 +45,7 @@ def evaluate(tree: dict, validation_set: np.array) -> dict:
 
     # Create the confusion matrix
     confusion_matrix = compute_cm(validation_set, tree)
-    
+
     # Initializing Recall, Precision and Classification rate
     recall_vect = np.zeros((1, cfg.NB_LABELS))
     prec_vect = np.zeros((1, cfg.NB_LABELS))
@@ -69,14 +68,18 @@ def evaluate(tree: dict, validation_set: np.array) -> dict:
             + np.sum(confusion_matrix[i, :])
             - 2 * confusion_matrix[i, i]
         )  # Classification rate = (TP + TN)/(TP + TN + FP + FN)
-        
+
     uar = np.mean(recall_vect)  # Unweighted Average Recall
     uap = np.mean(prec_vect)  # Unweighted Average Precision
-    #f1 = 2 * (uar * uap) / (uar + uap)  # Compute F1
+    # f1 = 2 * (uar * uap) / (uar + uap)  # Compute F1
     uac = np.mean(classification_rate)  # Unweighted Averate Classification Rate
     f1 = []
     for i in range(recall_vect.shape[1]):
-        f1.append(2*(recall_vect[0,i] * prec_vect[0,i])/(recall_vect[0,i] + prec_vect[0,i]))
+        f1.append(
+            2
+            * (recall_vect[0, i] * prec_vect[0, i])
+            / (recall_vect[0, i] + prec_vect[0, i])
+        )
     f1 = np.mean(f1)
-    
+
     return {"uar": uar, "uap": uap, "f1": f1, "uac": uac}
