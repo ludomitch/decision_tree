@@ -2,8 +2,8 @@ NB_LABELS = 4
 METRIC_CHOICE = "f1"  # f1, uar, uac, uap
 
 # HYPERPARAMETERS
-DEPTHS = [6,7,8,9]
-BOUNDARIES = [2,3,4,5]
+DEPTHS = [9]
+BOUNDARIES = [4]
 PRUNING = [True]
 
 DATASET = "noisy"  # clean or noisy

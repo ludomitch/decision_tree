@@ -42,10 +42,10 @@ def create_final_tree() -> dict:
     # Split data to conserve some "unseen" data for pruning evaluation
     split_size = int(0.2 * data.shape[0])
     np.random.shuffle(data)
-    validate, train = cv.split(data, 0, split_size)
+    train, validate = cv.split(data, 0, split_size)
 
     non_pruned_tree, _ = tree_learn(
-        data,
+        train,
         depth=0,
         tree={},
         max_depth=best_hyper["depth"],
