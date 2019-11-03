@@ -1,6 +1,6 @@
 import numpy as np
 from tree import tree_learn, run_pruning
-from evaluation import evaluate
+from evaluation import evaluate, compute_cm
 import config as cfg
 
 
@@ -131,13 +131,17 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
 
     err_all_hyperparams = []
     err_all_hyperparams_var = []
+    
+    cm_list = []
 
     # For all the sets of hyperparemeters dictionnary
     for hyp in hyperparameters:
         print(f"Running with hyperparameters: {hyp}")
         moi = []  # metric of interest: i.e. F1
 
+        cm = np.zeros((4,4))
         for i in range(folds):
+            
             # Split data into evaluation and training datasets
             eval_set, train_set = split(df, i * split_size, split_size)
 
@@ -156,6 +160,12 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
             moi.append(
                 metric_scores
             )  # metric_scores is F1 only currently as se tin run_pruning output
+            
+            cm += compute_cm(eval_set, tree) # Confusion matrix of each fold
+            
+        # Average out the confusion matrix for each hyperparameter
+        cm = cm/i
+        cm_list.append(cm)
 
         base_dict = {}
 
@@ -170,9 +180,10 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
         err_all_hyperparams.append(means)
         err_all_hyperparams_var.append(variances)
 
-        err = np.array(err_all_hyperparams)
-        var = np.array(err_all_hyperparams_var)
+    err = np.array(err_all_hyperparams)
+    var = np.array(err_all_hyperparams_var)
 
-        best_hyper = hyperparamters_list()[np.argmax(err[:,2])]
+    best_hyper = hyperparamters_list()[np.argmax(err[:,2])]
+    print("\nBest averaged confusion matrix : \n",cm_list[np.argmax(err[:,2])])
 
-    return best_hyper, err, var
+    return best_hyper, err, var, cm_list[np.argmax(err[:,2])]
