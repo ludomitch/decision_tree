@@ -89,18 +89,25 @@ def tree_learn(
     max_depth: depth at which to stop creating branches
     reduction: sets the boundary for information gain potential splits
     returns the completed decision tree"""
+
+    # Stop recursion if we reach the max_depth of the tree
     if depth == max_depth:
         unique, counts = np.unique(data[:, -1], return_counts=True)
-        tree = unique[np.argmax(counts)]
+        tree = unique[np.argmax(counts)] # Output most recurrent label
         return tree, depth
+    # Stop recursion if there is only one label in the data segment
     if np.all(data[:, -1] == data[0, -1]):  # check if all labels are identical
         tree = data[0, -1]
         return tree, depth
+    # Identify column and value on which to split data
     split = find_split(data, reduction)
+    # Open up two new branches
     split["left"] = {}
     split["right"] = {}
     tree = split
+    # Split the data based on the best values found
     l_data, r_data = split_data(data, split["wifi_signal"], split["dB"])
+    # Recursively rerun function in both new branches
     l_branch, l_depth = tree_learn(
         l_data, depth + 1, split["left"], max_depth, reduction
     )
@@ -115,16 +122,16 @@ def tree_learn(
 
 def evaluate_prune(tree: dict, test: np.array, base_score: float, track: list) -> dict:
     """Prune and evaluate whether we want to keep pruned tree or original tree."""
-    original = copy.deepcopy(tree)  # original tree
+    original = copy.deepcopy(tree)  # keep copy of pre-pruned tree
+    # Prune tree by replacing a branch with a single value
     leaf_value = get_nested_value(tree, track)["info_label"]
     set_nested_value(tree, track, leaf_value)
-    # chop off branches and turn into leaf
-    ### Prune score needs to be replaced by better error loss function ###
+    # Score the new pruned tree
     prune_score = evaluate(tree, test)[
         cfg.METRIC_CHOICE
-    ]  # currently just using f1 mean
-
-    if prune_score >= base_score:  # SHALL IT BE = also???
+    ]
+    # Compare the pruned tree with the original tree
+    if prune_score >= base_score:
         return tree, 1  # pruned
     return original, 0
 
@@ -153,21 +160,26 @@ def prune_tree(
     # Initialize branch to be full tree before we recursively enter the branches
     if branch is None:
         branch = tree
+    # Stop running once you reach a leaf
     if isinstance(branch, float):
         return tree, prune_count
+    # One step look aheads allow us to see if next level down there are leafs on both
+    # sides, in which case we can prune–or not 
     if (isinstance(branch["left"], float)) and (isinstance(branch["right"], float)):
         # if pruning is worth it, the pruned tree becomes the base tree
-        tree, prunePlus = evaluate_prune(tree, test, base_score, track)
-        prune_count += prunePlus  # If pruned successful,add to prune_count
+        tree, prune_bool = evaluate_prune(tree, test, base_score, track)
+        prune_count += prune_bool  # If pruned successful, add 1 to prune_count
         return tree, prune_count
     for i in ["left", "right"]:
-        init_track = copy.deepcopy(track)
+        # Store track so we can use original with left and right
+        track_copy = copy.deepcopy(track)
         track.append(i)
+        # Recurisvely travel through tree until we get to penultimate depth
         tree, prune_count = prune_tree(
             tree, branch[i], train, test, base_score, track, prune_count
         )
         track = copy.deepcopy(
-            init_track
+            track_copy
         )  # reinitialise track for right after done with left
     return tree, prune_count
 
@@ -178,28 +190,19 @@ def run_pruning(
     """Runs the prune_tree function until there is no more pruning to be done
     as it would not increase the evaluation score."""
 
-    bConv = False
-    new_count = 0
-    sweep_counter = 1
-    while not bConv:
-        old_count = new_count
+    keep_pruning = True
+    new_prune_count = 0
+    while keep_pruning:
+        old_prune_count = new_prune_count
+        # Run one sweep of prunes at bottomest depths of tree
         tree, prunes = prune_tree(tree, None, train, test, base_score, [], 0)
-        new_count = old_count + prunes
+        new_prune_count = old_prune_count + prunes # Update prune count
 
-        # print("{} Prunes at Sweep {}".format(prunes, sweep_counter))
-        # print(
-        #     "Updated base_score from {} to {}".format(
-        #         base_score, evaluate(tree, test)[2]
-        #     )
-        # )
-
-        # Change Base score
-        base_score = evaluate(tree, test)[cfg.METRIC_CHOICE]  # F1
-        # print("Total prunes = {}".format(new_count))
-
-        sweep_counter += 1
-        if new_count == old_count:
-            bConv = True
+        # Change Base score at each iteration
+        base_score = evaluate(tree, test)[cfg.METRIC_CHOICE]
+        # Stop pruning if no more prunes are being made
+        if new_prune_count == old_prune_count:
+            keep_pruning = False
     return tree, base_score
 
 
@@ -215,23 +218,3 @@ def set_nested_value(nested_dict: dict, key_list: list, value: float) -> None:
     for key in key_list[:-1]:
         nested_dict = nested_dict.setdefault(key, {})
     nested_dict[key_list[-1]] = value
-
-
-#####################
-# This is how to run
-#####################
-# import tree as dt
-# import evaluation as ev
-# import numpy as np
-# import copy
-# data = np.loadtxt('noisy_dataset.txt')
-# size = data.shape[0]
-# train = data[:int(size*0.8), :]
-# test = data[int(size*0.8):, :]
-# tree, _ = dt.tree_learn(train, 0, {}, 5)
-# # dt.predict(tree, data[0, :])
-# base_tree = copy.deepcopy(tree)
-# base_score = ev.evaluate(base_tree, copy.deepcopy(test))
-# pruning_tree = copy.deepcopy(tree)
-# new_tree = dt.prune_tree(pruning_tree, None, train, test, base_score, [])
-# new_tree == tree

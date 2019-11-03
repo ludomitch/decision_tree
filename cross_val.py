@@ -57,9 +57,7 @@ def cross_validation(data: np.array, folds: int, test_percentage: float) -> tupl
     # Splitting Test from Validation and Training
     for i in range(folds):
         print(
-            "-------------------- Test/Train separation "
-            + str(i)
-            + " --------------------"
+            f"-------------------- Test/Train separation {i} --------------------"
         )
         test_set, train_and_validate = split(df, i * split_size, split_size)
         # Splitting Validation from Training
@@ -68,9 +66,7 @@ def cross_validation(data: np.array, folds: int, test_percentage: float) -> tupl
         for hyp in hyperparameters:
             print(f"Running with hyperparameters: {hyp}")
             moi = []  # metric of interest: i.e. F1
-            # Splitting Validation from Training
             for j in range(folds - 1):
-                print("------- Train/Validate separation " + str(j) + " -------")
                 # Split Validation from Training
                 validate, train = split(train_and_validate, j * split_size, split_size)
 
@@ -113,7 +109,7 @@ def cross_validation(data: np.array, folds: int, test_percentage: float) -> tupl
                 tree, train_and_validate, test_set, base_scores[cfg.METRIC_CHOICE]
             )
 
-        score_hyper = evaluate(tree, test_set)  # [cfg.METRIC_CHOICE]
+        score_hyper = evaluate(tree, test_set)  # All scores
 
         global_scores.append(score_hyper)
 
@@ -145,19 +141,14 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
         moi = []  # metric of interest: i.e. F1
 
         for i in range(folds):
-            print(
-                "-------------------- Eval/Train separation "
-                + str(i)
-                + " --------------------"
-            )
-            # SPLIT DATAFRAME
+            # Split data into evaluation and training datasets
             eval_set, train_set = split(df, i * split_size, split_size)
 
-            # Train Tree on Training
+            # Train tree on training data
             tree, _ = tree_learn(
                 train_set, 0, tree={}, max_depth=hyp["depth"], reduction=hyp["boundary"]
             )
-            # Pruning
+            # Run pruning if hyperparameter says to do so
             base_scores = evaluate(tree, eval_set)  # for later use
             if hyp['prune']:
                 tree, _ = run_pruning(
@@ -172,14 +163,13 @@ def param_tuning(data: np.array, folds: int, test_percentage: float) -> tuple:
         base_dict = {}
 
         arr_scores = np.zeros((4,np.size(moi)))
-        for index, key in enumerate("uar uap f1 uac".split()):
+        for index, key in enumerate(['uar', 'uap', 'f1', 'uac']):
             base_dict[key] = 0
             for i in range(np.size(moi)):
                 arr_scores[index,i] = moi[i][key]
         variances = np.var(arr_scores,axis = 1)
         means = np.mean(arr_scores,axis = 1)
 
-        #for key in "uar uap f1 uac".split():
         err_all_hyperparams.append(means)
         err_all_hyperparams_var.append(variances)
 
