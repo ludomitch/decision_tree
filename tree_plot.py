@@ -133,6 +133,6 @@ def plot_tree(tree, plot_name):
     tr = copy.deepcopy(tree)
     ax = init_plot()
     recurs_plot(1, 5, tr, 15, 2, ax)
-    plt.savefig(plot_name + ".eps")
+    plt.savefig(plot_name + ".eps", bbox_inches='tight')
     return
 

@@ -54,7 +54,7 @@ def create_final_tree() -> dict:
 
     # Always run pruning as we've seen it's always better
     pruned_tree, _ = run_pruning(non_pruned_tree, train, validate)
-    print(pruned_tree)
+
     # Plot both trees
     pt.plot_tree(non_pruned_tree, "before_pruning")
     pt.plot_tree(pruned_tree, "after_pruning")
