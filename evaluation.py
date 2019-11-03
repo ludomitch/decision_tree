@@ -62,8 +62,6 @@ def evaluate(tree: dict, validation_set: np.array) -> dict:
             confusion_matrix[i, i] / np.sum(confusion_matrix[:, i]),
             confusion_matrix[i, i],
         )  # Precision = TP/(TP + FP)
-        
-        # possibility to raise an error TBC
 
         classification_rate[0, i] = np.trace(confusion_matrix) / (
             np.trace(confusion_matrix)
@@ -74,7 +72,11 @@ def evaluate(tree: dict, validation_set: np.array) -> dict:
         
     uar = np.mean(recall_vect)  # Unweighted Average Recall
     uap = np.mean(prec_vect)  # Unweighted Average Precision
-    f1 = 2 * (uar * uap) / (uar + uap)  # Compute F1
+    #f1 = 2 * (uar * uap) / (uar + uap)  # Compute F1
     uac = np.mean(classification_rate)  # Unweighted Averate Classification Rate
+    f1 = []
+    for i in range(recall_vect.shape[1]):
+        f1.append(2*(recall_vect[0,i] * prec_vect[0,i])/(recall_vect[0,i] + prec_vect[0,i]))
+    f1 = np.mean(f1)
     
     return {"uar": uar, "uap": uap, "f1": f1, "uac": uac}
